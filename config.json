@@ -1,0 +1,18 @@
+{
+    "rd_seed": null,
+    "kf_cut": 0.6,
+    "tt_cut": 1e-5,
+    "tracks_number": 1,
+    "single_run": {
+        "do": true,
+        "plot_representations": false,
+        "final_prints": true,
+        "save_diff": false
+    },
+    "efficiency": {
+        "do": false,
+        "prints": true,
+        "plots": true,
+        "save_txt": false
+    }
+}

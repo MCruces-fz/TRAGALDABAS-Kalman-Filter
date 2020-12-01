@@ -1,8 +1,13 @@
 import numpy as np
+import json
 
-# =================== #
-# ==== Constants ==== #
-# =================== #
+# Read Configurations from config.json
+with open("config.json", "r") as config_file:
+    config = json.load(config_file)
+
+# ========================================================================== #
+# ============================ C O N S T A N T S =========================== #
+# ========================================================================== #
 
 VC = 0.3  # [MM/PS]
 SC = 1 / VC  # SLOWNESS ASSOCIATED WITH LIGHT SPEED
@@ -21,10 +26,11 @@ GAMMA = ENE / MASS  # GAMMA FACTOR
 BETA = np.sqrt(1 - 1 / GAMMA ** 2)  # BETA FACTOR
 BETGAM = BETA * GAMMA
 VINI = BETA * VC  # INITIAL VELOCITY
-SINI = 1 / VINI  # INITIAL SLOWNESS
+# SINI = 1 / VINI  # INITIAL SLOWNESS
 PMOM = BETGAM * MASS  # MOMENTUM
 
-NTRACK = 2  # NUM. OF TRACKS TO BE GENERATED
+# NTRACK = 2  # NUM. OF TRACKS TO BE GENERATED
+NTRACK = config["tracks_number"]  # NUM. OF TRACKS TO BE GENERATED
 THMAX = 90  # MAX THETA IN DEGREES
 NPAR = 6  # NUM. OF PARAMETERS TO BE FITTED
 NDAC = 3  # NUM DATA PER CELL: X, Y, T
@@ -39,20 +45,22 @@ TINI = 1000  # INITIAL TIME
 # ========================= #
 # ==== Detector design ==== #
 # ========================= #
+'''
+- Rectangular detector with ncx * ncy rectangular electrodes
+- It is assumed that the origin is in one edge of the detector
 
-# RECTANGULAR DETECTOR WITH NCX*NCY RECTANGULAR ELECTRODES
-# IT IS ASSUMED THAT THE ORIGIN IS IN ONE EDGE OF THE DETECTOR
+P L A N E S   D I S T R I B U T I O N
 
-# Planes distribution:               [mm]   [mm]
-# T1 # -------------------------- # 1826      0  TOP
-#
-# T2 # -------------------------- # 1304    522
-# T3 # -------------------------- #  924    902
-#
-#
-# T4 # -------------------------- #   87   1739  BOTTOM
-#                                      0         GROUND
+                                 [mm]   [mm]
+T1 # -------------------------- # 1826      0  TOP
 
+T2 # -------------------------- # 1304    522
+T3 # -------------------------- #  924    902
+
+
+T4 # -------------------------- #   87   1739  BOTTOM
+                                     0         GROUND
+'''
 # VZI = [1800, 1200, 900, 0]  # mm. POSITION OF THE PLANES IN Z AXIS, MEASURED FROM GROUND TO TOP
 # VZ = [0, 600, 900, 1800]  # mm. POSITION OF PLANES MEASURED FROM TOP TO BOTTOM
 VZ0 = np.array([1826, 1304, 924, 87])  # mm. REAL HEIGHTS
@@ -74,10 +82,10 @@ DT = 100  # DIGITIZER PRECISION
 SIGX = (1 / np.sqrt(12)) * WCX
 SIGY = (1 / np.sqrt(12)) * WCY
 SIGT = 300  # [PS]
-WX = 1 / SIGX**2
-WY = 1 / SIGY**2
-WT = 1 / SIGT**2
+WX = 1 / SIGX ** 2
+WY = 1 / SIGY ** 2
+WT = 1 / SIGT ** 2
 
 # DEFAULT VARIANCES:
-VSLP = 0.1**2  # VARIANCE FOR SLOPE
-VSLN = 0.01**2  # VARIANCE FOR SLOWNESS
+VSLP = 0.1 ** 2  # VARIANCE FOR SLOPE
+VSLN = 0.01 ** 2  # VARIANCE FOR SLOWNESS

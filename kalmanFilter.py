@@ -2,6 +2,9 @@
 """
 Created on Fri 9 Oct 18:47 2020
 
+Google Style Python Docstrings Example:
+https://www.sphinx-doc.org/es/1.6/ext/example_google.html
+
 mcsquared.fz@gmail.com
 miguel.cruces@rai.usc.es
 
@@ -47,7 +50,7 @@ if config["single_run"]["plot_representations"]:
     plt.close("all")
 
 
-NTRACK = config["tracks_number"]  # NUM. OF TRACKS TO BE GENERATED
+# NTRACK = config["tracks_number"]  # NUM. OF TRACKS TO BE GENERATED
 
 
 # ========================================================================== #
@@ -69,146 +72,252 @@ def diag_matrix(dim: int, diag: list or object):
     return arr
 
 
-def gene_tracks(all_tracks_in: bool = True, ntrack=NTRACK):
+def print_saetas(saetas_array):
     """
-    It generates random parameters to construct the tracks as Saetas. If the
-    track doesn't enter in the detector, it is deleted from the list.
+    Prints a table with saetas in rows and their coordinates as columns.
 
-    :param all_tracks_in: True if force nt == NTRACKS or False if nt <= NTRACKS
-        randomly deleting outisders.
-    :param ntrack: Number of generated tracks.
-
-    :return generated_tracks: Matrix of generated tracks (initial saetas).
-    :return nt: Total number of tracks in the detector
+    :param saetas_array: Array with saetas at first index and coordinates
+        at second index.
     """
-    cos_theta_max = np.cos(np.deg2rad(THMAX))  # Theta max angle cosine
-    # lenz = abs(VZI[0] - VZI[-1])  # Distance from bottom to top planes
-    it = 0  # Number of tracks actually
-    generated_tracks = np.zeros([ntrack, NPAR])  # generated tracks k_mat
-    i = 1
-    while i <= ntrack:
-        # Uniform distribution in cos(theta) and phi
-        rcth = 1 - np.random.random() * (1 - cos_theta_max)
-        tth = np.arccos(rcth)  # theta random angle
-        tph = np.random.random() * 2 * np.pi  # phi random angle
+    tabs = "\t" * 3
+    print(f"\tX0{tabs}XP{tabs}Y0{tabs}YP{tabs}T0{tabs}S0")
+    for saeta in saetas_array:
+        for coord in saeta:
+            print(f"{coord:8.3f}", end="\t")
+        print("")
 
-        X0 = np.random.random() * LENX
-        Y0 = np.random.random() * LENY
-        T0 = (0.5 + np.random.random()) * TINI
-        # T0 = TINI
-        S0 = SINI
 
-        # Director Cosines
-        cx = np.sin(tth) * np.cos(tph)
-        cy = np.sin(tth) * np.sin(tph)
-        cz = np.cos(tth)
-        XP = cx / cz  # projected slope in the X-Z plane
-        YP = cy / cz  # projected slope in the Y-Z plane
+class GenerateEvent:
+    def __init__(self, all_tracks_in: bool = True, in_track=NTRACK):
+        """ C L A S S - C O N S T R U C T O R
 
-        # Coordinate where would the particle come out
-        xzend = X0 + XP * LENZ
-        yzend = Y0 + YP * LENZ
+        Note:
+            Blah-blah-blah...
 
-        # We refer the coordinate to the detector center (xmid, ymid)
-        xmid = xzend - (LENX / 2)
-        ymid = yzend - (LENY / 2)
+        Args:
+            all_tracks_in (bool, optional): True if force nt == NTRACKS or False if nt <= NTRACKS
+                randomly deleting outsiders.
+            in_track (int, optional): Number of tracks to generate
 
-        if not all_tracks_in:
-            i += 1
-        # We check if the particle has entered the detector
-        if np.abs(xmid) < (LENX / 2) and np.abs(ymid) < (LENY / 2):
-            generated_tracks[it, :] = [X0, XP, Y0, YP, T0, S0]
-            it += 1
-            if all_tracks_in:
+        Attributes:
+            self.all_tracks_in (int):
+            self.in_track (int):
+
+            self.tracks_number (int): Number of tracks generated across the detector.
+            self.generated_tracks (:obj: float): Matrix of generated tracks
+
+            self.m_dat (:obj: float): Matrix of generated and digitized tracks. Detector data.
+            self.m_dpt (:obj: float): Impact point
+        """
+        self.all_tracks_in = all_tracks_in
+        self.in_track = in_track
+
+        self.tracks_number: int or None = None
+        self.generated_tracks = np.zeros([0, NPAR])  # generated tracks k_mat
+
+        self.m_dpt = np.zeros(NPLAN * NDAC)  # Impact point
+        self.m_dat = np.zeros(NPLAN * NDAC)  # Detector data k_mat
+
+    @staticmethod
+    def set_T0(t_random: bool = True):
+        """
+        Defines initial value for initial time of each saeta:
+
+        :param t_random: Choose if set T0 randomly or equal to TINI
+        """
+        if t_random:
+            return (0.5 + np.random.random()) * TINI
+        else:
+            return TINI
+
+    def gene_tracks(self):
+        """
+        It generates random parameters to construct the tracks as Saetas. If the
+        track doesn't enter in the detector, it is deleted from the list.
+
+        :return generated_tracks: Matrix of generated tracks (initial saetas_array).
+        :return tracks_number: Total number of tracks in the detector
+        """
+        cos_theta_max = np.cos(np.deg2rad(THMAX))  # Theta max angle cosine
+        # lenz = abs(VZI[0] - VZI[-1])  # Distance from bottom to top planes
+        it = 0  # Number of tracks actually
+        i = 1
+        while i <= self.in_track:
+            # Uniform distribution in cos(theta) and phi
+            rcth = 1 - np.random.random() * (1 - cos_theta_max)
+            tth = np.arccos(rcth)  # theta random angle
+            tph = np.random.random() * 2 * np.pi  # phi random angle
+
+            X0 = np.random.random() * LENX
+            Y0 = np.random.random() * LENY
+            T0 = self.set_T0()
+            S0 = SINI
+
+            # Director Cosines
+            cx = np.sin(tth) * np.cos(tph)
+            cy = np.sin(tth) * np.sin(tph)
+            cz = np.cos(tth)
+            XP = cx / cz  # projected slope in the X-Z plane
+            YP = cy / cz  # projected slope in the Y-Z plane
+
+            # Coordinate where would the particle come out
+            xz_end = X0 + XP * LENZ
+            yz_end = Y0 + YP * LENZ
+
+            # We refer the coordinate to the detector center (x_mid, y_mid)
+            x_mid = xz_end - (LENX / 2)
+            y_mid = yz_end - (LENY / 2)
+
+            if not self.all_tracks_in:
                 i += 1
-    nt = it  # number of tracks in the detector
-    generated_tracks = generated_tracks[~(generated_tracks == 0).all(1)]
-    return generated_tracks, nt
+            # We check if the particle has entered the detector
+            if np.abs(x_mid) < (LENX / 2) and np.abs(y_mid) < (LENY / 2):
+                saeta = np.array([X0, XP, Y0, YP, T0, S0])
+                self.generated_tracks = np.vstack((self.generated_tracks, saeta))
+                it += 1
+                if self.all_tracks_in:
+                    i += 1
+        self.tracks_number = it  # number of tracks in the detector
+        # return self.generated_tracks, self.tracks_number
 
+    def trag_digitization(self):  # , mtgen, nt: int):
+        """
+        # ======== DIGITIZATION FOR TRAGALDABAS DETECTOR ======== #
 
-def trag_digitization(nt: int, mtgen):
-    """
-    # ======== DIGITIZATION FOR TRAGALDABAS DETECTOR ======== #
+        It converts the parameters inside mtgen to discrete
+        numerical values, which are the cell indices (m_dat) and
+        cell central positions (m_dpt).
 
-    It converts the parameters inside mtgen to discrete
-    numerical values, which are the cell indices (m_dat) and
-    cell central positions (m_dpt).
+        - m_dat --> (kx1, ky2, time1, kx2, ky2, time2, ...)  Indices of impact
+        - m_dpt --> ( X1,  Y1,    T1,  X2,  Y2,    T2, ...)  Real points of impact / mm
+        :return: m_dat (cell indices k_mat) and m_dpt (cell central
+            positions k_mat).
+        """
+        v_dat = np.zeros(NPLAN * NDAC)  # Digitalizing tracks vector
+        v_dpt = np.zeros(NPLAN * NDAC)  # Vector with impact point
+        nx = 0
+        zt = VZ1[0]  # Z top
+        for it in range(self.tracks_number):
+            x0, xp, y0, yp, t0, s0 = self.generated_tracks[it, :]  # dz = np.cos(th)
 
-    - m_dat --> (kx1, ky2, time1, kx2, ky2, time2, ...)  Indices of impact
-    - m_dpt --> ( X1,  Y1,    T1,  X2,  Y2,    T2, ...)  Real points of impact / mm
+            it = 0
+            for ip in range(NPLAN):
+                zi = VZ1[ip]  # current Z
+                dz = zi - zt  # dz >= 0
 
-    :param nt: Number of tracks generated across the detector.
-    :param mtgen: Matrix of generated tracks
-    :return: m_dat (cell indices k_mat) and m_dpt (cell central
-        positions k_mat).
-    """
-    v_dat = np.zeros(NPLAN * NDAC)  # Digitalizing tracks vector
-    v_dpt = np.zeros(NPLAN * NDAC)  # Vector with impact point
-    m_dat = np.zeros(NPLAN * NDAC)  # Detector data k_mat
-    m_dpt = np.zeros(NPLAN * NDAC)  # Impact point
-    nx = 0
-    zt = VZ1[0]  # Z top
-    for it in range(nt):
-        x0, xp, y0, yp, t0, s0 = mtgen[it, :]  # dz = np.cos(th)
+                xi = x0 + xp * dz
+                yi = y0 + yp * dz
+                ks = np.sqrt(1 + xp ** 2 + yp ** 2)
+                ti = t0 + ks * s0 * dz  # Time Flies (dz > 0)
 
-        it = 0
+                # Position indices of the impacted cells (cell index)
+                kx = np.int((xi + (WCX / 2)) / WCX)
+                ky = np.int((yi + (WCY / 2)) / WCY)
+                kt = np.int((ti + (DT / 2)) / DT) * DT
+                # Cell position (distance)
+                # xic = kx * WCX + (WCX / 2)
+                # yic = ky * WCX + (WCX / 2)
+                vpnt = np.asarray([xi, yi, ti])  # (X,Y,T) impact point
+                vxyt = np.asarray([kx, ky, kt])  # impact index
+                v_dpt[it:it + NDAC] = vpnt[0:NDAC]
+                v_dat[it:it + NDAC] = vxyt[0:NDAC]
+                it += 3
+            self.m_dpt = np.vstack((self.m_dpt, v_dpt))
+            self.m_dat = np.vstack((self.m_dat, v_dat))
+            nx += 1
+        self.m_dpt = np.delete(self.m_dpt, 0, axis=0)  # ( X, Y, T) impact point
+        self.m_dat = np.delete(self.m_dat, 0, axis=0)  # (kx,ky,kt) impact index
+        # return self.m_dat, self.m_dat
+
+    def set_root_output(self):
+        """
+        Emulates ROOT Trufa Output
+
+        :return output_data: 2D Array with hits in rows and
+            trbnum, cell, col, row, x, y, z, time, charge
+            as columns
+        """
+        self.gene_tracks()
+        self.trag_digitization()
+
+        trbnum = np.array([])
+        cell = np.array([])
+        col = np.array([])
+        row = np.array([])
+        x = np.array([])
+        y = np.array([])
+        z = np.array([])
+        time = np.array([])
+        charge = np.array([])
+
+        for rdat in self.m_dat:
+            indices = np.array([0, 3, 6, 9])
+            coli = rdat[indices + 1]
+            rowi = rdat[indices]
+
+            trbnum = np.hstack((trbnum, [0, 1, 2, 3]))
+            col = np.hstack((col, coli))
+            row = np.hstack((row, rowi))
+            cell = np.hstack((cell, NCX * rowi + coli))
+            x = np.hstack((x, (rowi + 0.5) * WCX))
+            y = np.hstack((y, (coli + 0.5) * WCY))
+            z = np.hstack((z, VZ0.copy()))
+            time = np.hstack((time, rdat[indices + 2]))
+            charge = np.hstack((charge, np.random.rand(4)))
+
+        output_data = np.vstack((trbnum, cell, col, row, x, y, z, time, charge)).T
+        np.random.shuffle(output_data)
+        return output_data
+
+    def matrix_det(self):  # , m_dat):
+        """
+        Creates a k_mat similar to TRAGALDABAS output data
+        Matrix with columns: (nhits, kx, ky, time)
+
+        :param m_dat: Matrix of generated and digitized tracks.
+        :return: Equivalent k_mat to m_data, in TRAGALDABAS format.
+        """
+        if np.all(self.m_dat == 0):  # Check if mdat is all zero
+            raise Exception('No tracks available! Matrix mdat is all zero ==> Run '
+                            'the program Again because actual random seed is not '
+                            f'valid for {NTRACK} number of tracks')
+        ntrk, _ = self.m_dat.shape  # Number of tracks, number of plans
+        ncol = 1 + NDAC * ntrk  # One more column to store number of tracks
+        mdet = np.zeros([NPLAN, ncol])
+        idat = 0
         for ip in range(NPLAN):
-            zi = VZ1[ip]  # current Z
-            dz = zi - zt  # dz >= 0
-
-            xi = x0 + xp * dz
-            yi = y0 + yp * dz
-            ks = np.sqrt(1 + xp ** 2 + yp ** 2)
-            ti = t0 + ks * s0 * dz  # Time Flies (dz > 0)
-
-            # Position indices of the impacted cells (cell index)
-            kx = np.int((xi + (WCX / 2)) / WCX)
-            ky = np.int((yi + (WCY / 2)) / WCY)
-            kt = np.int((ti + (DT / 2)) / DT) * DT
-            # Cell position (distance)
-            # xic = kx * WCX + (WCX / 2)
-            # yic = ky * WCX + (WCX / 2)
-            vpnt = np.asarray([xi, yi, ti])  # (X,Y,T) impact point
-            vxyt = np.asarray([kx, ky, kt])  # impact index
-            v_dpt[it:it + NDAC] = vpnt[0:NDAC]
-            v_dat[it:it + NDAC] = vxyt[0:NDAC]
-            it += 3
-        m_dpt = np.vstack((m_dpt, v_dpt))
-        m_dat = np.vstack((m_dat, v_dat))
-        nx += 1
-    m_dpt = np.delete(m_dpt, 0, axis=0)
-    m_dat = np.delete(m_dat, 0, axis=0)
-    return m_dpt, m_dat
+            idet = 0
+            for it in range(ntrk):
+                ideti = idet + 1
+                idetf = ideti + NDAC
+                idatf = idat + NDAC
+                mdet[ip, ideti:idetf] = self.m_dat[it, idat:idatf]
+                if not np.all((mdet[ip, ideti:idetf] == 0)):  # checks if all are zero
+                    mdet[ip, 0] += 1
+                idet += NDAC
+            idat += NDAC
+        return mdet
 
 
-def matrix_det(m_dat):
-    """
-    Creates a k_mat similar to TRAGALDABAS output data
-    Matrix with columns: (nhits, kx, ky, time)
+if __name__ == "__main__":
+    event = GenerateEvent(in_track=NTRACK)
+    root_output = event.set_root_output()
 
-    :param m_dat: Matrix of generated and digitized tracks.
-    :return: Equivalent k_mat to m_data, in TRAGALDABAS format.
-    """
-    if np.all(m_dat == 0):  # Check if mdat is all zero
-        raise Exception('No tracks available! Matrix mdat is all zero ==> Run '
-                        'the program Again because actual random seed is not '
-                        f'valid for {NTRACK} number of tracks')
-    ntrk, _ = m_dat.shape  # Number of tracks, number of plans
-    ncol = 1 + NDAC * ntrk  # One more column to store number of tracks
-    mdet = np.zeros([NPLAN, ncol])
-    idat = 0
-    for ip in range(NPLAN):
-        idet = 0
-        for it in range(ntrk):
-            ideti = idet + 1
-            idetf = ideti + NDAC
-            idatf = idat + NDAC
-            mdet[ip, ideti:idetf] = m_dat[it, idat:idatf]
-            if not np.all((mdet[ip, ideti:idetf] == 0)):  # checks if all are zero
-                mdet[ip, 0] += 1
-            idet += NDAC
-        idat += NDAC
-    return mdet
+    saetas = event.generated_tracks
+    print_saetas(saetas)
+
+    mdat = event.m_dat
+    mdpt = event.m_dpt
+
+    prt = False
+    if prt:
+        for trbnum, cell, col, row, x, y, z, time, charge in root_output:
+            print(f"{int(trbnum)} {int(cell):02d} {int(col)} {int(row)} "
+                  f"{x:3.1f} {y:3.1f} {z:3.1f} {time:3.1f} {charge:.3f}")
+
+
+# =========================================================================== #
+# =========================================================================== #
 
 
 def set_transport_func(ks: float, dz: int):
@@ -762,11 +871,14 @@ def kalman_filter_find(mdet, dcut=config["kf_cut"], tcut=config["tt_cut"]):
 
 if config["single_run"]["do"]:
     # ============== TRACKS GENERATION ============= #
-    mtrk, nt = gene_tracks()
+    single_event = GenerateEvent()
+    single_event.gene_tracks()
+    mtrk, nt = single_event.generated_tracks, single_event.tracks_number
 
     # ================ DIGITIZATION ================ #
-    mdpt, mdat = trag_digitization(nt, mtgen=mtrk)
-    mdet = matrix_det(mdat)
+    single_event.trag_digitization()  # nt, mtgen=mtrk)
+    mdpt, mdat = single_event.m_dpt, single_event.m_dat
+    mdet = single_event.matrix_det()  # mdat)
     mdet_xy = set_mdet_xy(mdet)
 
     # ================== ANALYSIS ================== #
@@ -823,6 +935,7 @@ if config["single_run"]["do"]:
 # ========================================================================== #
 
 elif config["efficiency"]["do"]:
+    single_event = GenerateEvent()
 
     nb_tracks = 3
     bins_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -839,9 +952,9 @@ elif config["efficiency"]["do"]:
             print(f"{int(cut * 100)}%")
         for run in range(1000):
             np.random.seed(int(time.time() * 1e6) % 2 ** 32)
-            mtrk, nt = gene_tracks(ntrack=nb_tracks)
-            mdpt, mdat = trag_digitization(nt, mtgen=mtrk)
-            mdet = matrix_det(mdat)
+            mtrk, nt = single_event.gene_tracks(ntrack=nb_tracks)
+            mdpt, mdat = single_event.trag_digitization(nt, mtgen=mtrk)
+            mdet = single_event.matrix_det(mdat)
             mdet_xy = set_mdet_xy(mdet)
             m_stat, mtrec = kalman_filter_find(mdet, dcut=kf_cut, tcut=tt_cut)
 
@@ -871,7 +984,12 @@ elif config["efficiency"]["do"]:
         np.savetxt(f"all_bins_{nb_tracks}_tracks.txt", all_bins)
 
 else:
-    print("Ojo cuidao, atento a los Settings de config (single_run = efficiency = False?)")
+    if config['single_run']['do'] == config['efficiency']['do']:
+        # print("Ojo cuidao, atento a los Settings de config (single_run = efficiency = False?)")
+        print(f"0j0 -> config['single_run']['do'] = config['efficiency']['do'] "
+              f"= {config['single_run']['do']}")
+    else:
+        print("Something Wrong!")
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

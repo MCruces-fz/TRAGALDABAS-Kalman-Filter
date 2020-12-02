@@ -1,10 +1,10 @@
 {
-    "rd_seed": null,
+    "rd_seed": 0,
     "kf_cut": 0.6,
     "tt_cut": 1e-5,
-    "tracks_number": 1,
+    "tracks_number": 2,
     "single_run": {
-        "do": true,
+        "do": false,
         "plot_representations": false,
         "final_prints": true,
         "save_diff": false

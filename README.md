@@ -25,10 +25,10 @@ reconstruct the initial track using Kalman Filter.
 *****************************
 
 
-### GenerateTracks class
+### GenerateEvent class
 It generates ntrack tracks from a charged particle and propagates them in 
 the Z axis direction through NPLAN planes.
-#### GenerateTracks.digitization() method
+#### GenerateEvent.digitization() method
 It simulates the digital answer in NPLAN planes of detectors, in which:
 - the coordinates (nx,ny) of the crossed pad are determined.
 - the flight time is determined integrating tint.
@@ -49,7 +49,7 @@ The config.json file is the settings table for users.
         on the detector (bool)
         * "final_prints": Set if print final data (bool)
         * "save_diff": Set if save differences between parameters of the 
-        generated and reconstructed SAETAs (See below "SAVE DIFFERENCIES" 
+        generated and reconstructed SAETAs (See below "SAVE DIFFERENCES" 
         docstring) (bool)
     + "efficiency":
         * "do": (bool)
@@ -58,8 +58,8 @@ The config.json file is the settings table for users.
         * "save_txt": (bool)
 
 
->--------------------------   S A V E - D I F F E R E N C I E S   --------------------------   
->________________________ (save_diff) _________________________
+>--------------------------   S A V E - D I F F E R E N C E S   --------------------------   
+>________________________ (save_diff) ________________________
 >
 >Set if save differences between parameters of the generated and  
 >reconstructed SAETAs,  
@@ -70,7 +70,7 @@ The config.json file is the settings table for users.
 >(X0r - X0g), (XPr - XPg), (Y0r - Y0g), (YPr - YPg), (T0r - T0g), (S0r - S0g)  
 >[..., ..., ..., ..., ..., ..., ..., ..., ...]  
 >on append mode.  
->-------------------------------------------   END   -----------------------------------------------   
+>-------------------------------------------   END   ----------------------------------------------   
 
 
 ### Comments

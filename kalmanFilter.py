@@ -26,23 +26,6 @@ from const import *
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #
 # ========================================================================== #
 
-"""
-#   --   S A V E   D I F F E R E N C I E S   --   #
-___________________ (save_diff) ___________________
-
-Set if save differences between parameters of the generated and reconstructed 
-SAETAs,
-    Sgen = [X0g, XPg, Y0g, YPg, T0g, S0g]
-    Srec = [X0r, XPr, Y0r, YPr, T0r, S0r]
-on 'saetas_file.csv'
-(X0r - X0g), (XPr - XPg), (Y0r - Y0g), (YPr - YPg), (T0r - T0g), (S0r - S0g)
-[..., ..., ..., ..., ..., ..., ..., ..., ...]
-on append mode.
-"""
-
-# Read Configurations from config.json
-with open("config.json", "r") as config_file:
-    config = json.load(config_file)
 
 np.set_printoptions(formatter={'float': '{:.3f}'.format})
 
@@ -52,9 +35,6 @@ if config["rd_seed"] is not None:
 
 if config["single_run"]["plot_representations"]:
     plt.close("all")
-
-
-# NTRACK = config["tracks_number"]  # NUM. OF TRACKS TO BE GENERATED
 
 
 # ========================================================================== #
@@ -123,7 +103,7 @@ class GenerateEvent:
             Blah-blah-blah...
 
         Args:
-            all_tracks_in (bool, optional): True ifforce nt == NTRACKS or False if nt <= NTRACKS
+            all_tracks_in (bool, optional): True ifforce n_tracks == NTRACKS or False if n_tracks <= NTRACKS
                 randomly deleting outsiders.
             in_track (int, optional): Number of tracks to generate
 
@@ -213,7 +193,7 @@ class GenerateEvent:
         self.tracks_number = it  # number of tracks in the detector
         # return self.generated_tracks, self.tracks_number
 
-    def trag_digitization(self):  # , mtgen, nt: int):
+    def trag_digitization(self):  # , mtgen, n_tracks: int):
         """
         # ======== DIGITIZATION FOR TRAGALDABAS DETECTOR ======== #
 
@@ -446,7 +426,7 @@ class TrackFitting:
         # saeta = v_stat[13:-1]
         # k_vector = v_stat[:13]
 
-        vs = self.saeta  # m_stat[it, 13:-1]  # State vector
+        vs = self.saeta  # all_reco_saetas[it, 13:-1]  # State vector
         mK = np.zeros([NPAR, NPAR])  # K k_mat initialization
         va = np.zeros(NPAR)  # Final state vector initialization
         so = 0  # So (Store soi values on loop)
@@ -493,6 +473,7 @@ if __name__ == "__main__" and fit_debug:
     saeta = np.array([123, 0.5, 213, 0.3, 1200, 3.333])
     full_vec = np.array([1, 1, 2, 1000, 1, 2, 3000, 1, 3, 4000, 2, 3, 7000, 123, 0.5, 213, 0.3, 1200, 3.333, 0.2345])
     print(fitting.tim_track_fit(vstat_fcut=full_vec))  # cells_path=kvec, state_vec=saeta))
+
 
 # ========================================================================== #
 # ============= K A L M A N   F I L T E R   F U N C T I O N S ============== #
@@ -673,6 +654,18 @@ class TrackFinding:
         K = np.dot(Cn, np.dot(H.T, wghts))
         return K, wghts
 
+    def find_tracks(self):
+        if self.root_input is not None and self.mdet is None:
+            pass
+        elif self.mdet is not None and self.root_input is None:
+            return self.kalman_filter_find()
+        else:
+            raise Exception("Something went wrong choosing track-finding method ->"
+                            "TrackFinding only needs mdet_out OR root_out")
+
+    def kalman_filter_root(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+        pass
+
     def kalman_filter_find(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         """
         Main Finding Function using Kalman Filter Algorithm
@@ -682,7 +675,7 @@ class TrackFinding:
         :param tcut:
         :return:
             - mstat: Hello
-            - mtrec: World!
+            - reco_saetas: World!
         """
         r = np.zeros([NPLAN, NPAR])  # Vector (parameters); dimension -> Number of
         # Planes x maximum hits x parameters
@@ -780,16 +773,16 @@ class TrackFinding:
                                         k_vector = vstat_cutf[0:13]
                                         v_stat_tt = np.hstack((k_vector, vs, prob))
                                         mtrec = np.vstack((mtrec, v_stat_tt))
-                                break  # It takes another hit configuration and saves vstat in m_stat
+                                break  # It takes another hit configuration and saves vstat in all_reco_saetas
         to_delete = []
         for i in range(len(mtrec)):
             for j in range(i + 1, len(mtrec)):
                 if np.all(mtrec[i, 1:4] == mtrec[j, 1:4]):
                     if mtrec[i, -1] > mtrec[j, -1]:
-                        # print(f"Deleted index {j} because {mtrec[j, -1]:.4f} < {mtrec[i, -1]:.4f}")
+                        # print(f"Deleted index {j} because {reco_saetas[j, -1]:.4f} < {reco_saetas[i, -1]:.4f}")
                         to_delete.append(j)
                     else:
-                        # print(f"Deleted index {i} because {mtrec[i, -1]:.4f} < {mtrec[j, -1]:.4f}")
+                        # print(f"Deleted index {i} because {reco_saetas[i, -1]:.4f} < {reco_saetas[j, -1]:.4f}")
                         to_delete.append(i)
         m_trec = np.delete(mtrec, to_delete, axis=0)
         return m_stat, m_trec
@@ -815,301 +808,202 @@ if __name__ == "__main__" and find_debug:
 # ========================================================================== #
 
 
-def plot_saetas(vector, fig_id: int or str or None = None,
-                plt_title=None, lbl: str = 'Vector', grids: bool = False,
-                frmt_color: str = "green", frmt_marker: str = "--", prob_s=None):
-    """
-    Config Function for plot any SAETA with 6 parameters
+class Represent3D:
+    def __init__(self, reco_saetas: np.array = None,
+                 reco_hits: np.array = None,
+                 gene_saetas: np.array = None):
+        self.vector = reco_saetas
+        self.k_mat = reco_hits
+        self.mtrack = gene_saetas
 
-    :param vector: The SAETA vector [X0, XP, Y0, YP, T0, S0]
-    :param fig_id: Identification for the plot window
-    :param plt_title:  Title for the plot
-    :param lbl: Label for the SAETA
-    :param grids: Set cell grids (higher CPU requirements, not recommendable)
-    :param frmt_color: Format color for the SAETA representation
-    :param frmt_marker: Format marker for the SAETA representation
-    :param prob_s: value with alpha to fade SAETA.
-    """
-    # Plot configuration
-    if fig_id is None:
-        fig_id = 'State Vectors'
-    fig = plt.figure(fig_id)
-    ax = fig.gca(projection='3d')
-    if plt_title is not None:
-        ax.set_title(plt_title)
-    ax.set_xlabel('X axis / mm')
-    ax.set_ylabel('Y axis / mm')
-    ax.set_zlabel('Z axis / mm')
-    ax.set_xlim([0, LENX])
-    ax.set_ylim([0, LENY])
-    ax.set_zlim([VZ0[-1], VZ0[0]])
-
-    # Unpack values
-    x0, xp, y0, yp, t0, s0 = vector
-
-    # Definition of variables
-    z0 = VZ0[0]  # Detector Top Height
-    z1 = VZ0[-1]  # Detector Bottom Height
-    dz = z0 - z1  # Detector Height
-    x1 = xp * dz
-    y1 = yp * dz
-
-    # Plot Vector
-    x = np.array([x0, x0 + x1])
-    y = np.array([y0, y0 + y1])
-    z = np.array([z0, z1])
-    if prob_s is not None:
-        if 1 >= prob_s >= 0.9:
-            frmt_color = "#FF0000"
-        elif 0.9 > prob_s >= 0.6:
-            frmt_color = "#FF5000"
-        elif 0.6 > prob_s >= 0.3:
-            frmt_color = "#FFA000"
-        elif 0.3 > prob_s >= 0:
-            frmt_color = "#FFF000"
-        else:
-            raise Exception(f"Ojo al dato: Prob = {prob_s}")
-    ax.plot(x, y, z, linestyle=frmt_marker, color=frmt_color, label=lbl)
-    ax.legend(loc='best')
-
-    # Plot cell grid
-    if grids:
-        for zi in [-7000]:
-            for yi in np.arange(-0.5, 10.5 + 1):
-                for xi in np.arange(-0.5, 12.5 + 1):
-                    plt.plot([-0.5, 12.5], [yi, yi], [zi, zi], 'k', alpha=0.1)
-                    plt.plot([xi, xi], [-0.5, 10.5], [zi, zi], 'k', alpha=0.1)
-    ax.legend(loc='best')
-    # plt.show()
-
-
-def plot_hit_ids(k_vec, fig_id: str = None, plt_title: str or None = None,
-                 digi_trk: bool = True, cells: bool = True,
-                 lbl: str = 'Digitized', frmt_color: str = "green", frmt_marker: str = ":"):
-    """
-    Config Function for plot any set of hits
-
-    :param k_vec: Set of hits
-    :param fig_id: Identification for the plot window
-    :param plt_title: Title for the plot
-    :param digi_trk: Set if reconstructed digitized track is shown
-    :param cells: Set if hit cell squares are shown
-    :param lbl: Label for the SAETA
-    :param frmt_color: Format of color for the SAETA representation
-    :param frmt_marker: Format of marker for the SAETA representation
-    """
-    # Set Plot - Initial Config
-    if fig_id is None:
-        fig_id = plt_title
-    fig = plt.figure(fig_id)
-    ax = fig.gca(projection='3d')
-    if plt_title is not None:
-        ax.set_title(plt_title)
-    ax.set_xlabel('X axis / mm')
-    ax.set_ylabel('Y axis / mm')
-    ax.set_zlabel('Z axis / mm')
-    ax.set_xlim([0, LENX])
-    ax.set_ylim([0, LENY])
-    ax.set_zlim([VZ0[-1], VZ0[0]])
-
-    x = k_vec[np.arange(0, 12, 3)] * WCX
-    y = k_vec[np.arange(1, 12, 3)] * WCY
-
-    if cells:
-        for ip in range(NPLAN):
-            p = Rectangle(xy=(x[ip] - 0.5 * WCX, y[ip] - 0.5 * WCY),
-                          width=WCX, height=WCY, alpha=0.5,
-                          facecolor='#AF7AC5', edgecolor='#9B59B6', fill=True)
-            ax.add_patch(p)
-            art3d.pathpatch_2d_to_3d(p, z=VZ0[ip], zdir="z")
-
-    if digi_trk:
-        ax.plot(x, y, VZ0, linestyle=frmt_marker, color=frmt_color, label=lbl)
-    ax.plot(x, y, VZ0, 'k.', alpha=0.9)
-
-    ax.legend(loc='best')
-    # plt.show()
-    # fig.show()
-
-
-def plot_detector(k_mat=None, fig_id=None, plt_title='Matrix Rays',
-                  cells: bool = False, mtrack=None, mrec=None, prob_ary=None):
-    """
-    Config function for plot sets of hits and SAETAs
-
-    :param k_mat: Matrix with all hits indices and times
-    :param fig_id: Identification for the plot window
-    :param plt_title: Title for the plot
-    :param cells: Set if hit cell squares are shown
-    :param mtrack: Array with all SAETAs generated
-    :param mrec: Array with all SAETAs reconstructed
-    :param prob_ary: Array with probabilities sorted by tracks order.
-    """
-    # Set Plot - Initial Config
-    if fig_id is None:
-        fig_id = plt_title
-    fig = plt.figure(fig_id)
-    ax = fig.gca(projection='3d')
-    ax.set_title(plt_title)
-    ax.set_xlabel('X axis / mm')
-    ax.set_ylabel('Y axis / mm')
-    ax.set_zlabel('Z axis / mm')
-    ax.set_xlim([0, LENX])
-    ax.set_ylim([0, LENY])
-    ax.set_zlim([VZ0[-1], VZ0[0]])
-
-    # Plot Generated Tracks (SAETAs)
-    if mtrack is not None:
-        for trk in range(mtrack.shape[0]):
-            plot_saetas(mtrack[trk], fig_id=fig_id,
-                        lbl=f'Gene. {trk + 1}', frmt_color='#3498DB', frmt_marker='--')
-
-    # Plot Digitized Tracks (Hits By Indices)
-    if k_mat is not None:
-        for trk in range(k_mat.shape[0]):
-            plot_hit_ids(k_mat[trk], fig_id=fig_id,
-                         lbl=f'Digi. {trk + 1}', frmt_color='#196F3D', frmt_marker=':', cells=cells)
-
-    # Plot Reconstructed Tracks (SAETAs)
-    if mrec is not None:
-        for rec in range(mrec.shape[0]):
-            plot_saetas(mrec[rec], fig_id=fig_id,
-                        lbl=f'Reco. {rec + 1}', frmt_color='b', frmt_marker='-',
-                        prob_s=prob_ary[rec])
-
-    # plt.show()
-
-
-# ========================================================================== #
-# ====================== G E N E - D I G I T - A N A ======================= #
-# ========================================================================== #
-
-if config["single_run"]["do"]:
-    # ============== TRACKS GENERATION ============= #
-    single_event = GenerateEvent()
-
-    mtrk, nt = single_event.generated_tracks, single_event.tracks_number
-
-    # # ================ DIGITIZATION ================ #
-
-    mdet = single_event.get_mdet_output()
-    mdat = single_event.hit_digits
-
-    # ================== ANALYSIS ================== #
-    kalman_filter = TrackFinding(mdet_out=mdet)
-
-    m_stat, mtrec = kalman_filter.kalman_filter_find()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
-    mdet_xy = kalman_filter.mdet_xy
-
-    saeta_kf = m_stat[:, 13:-1]
-    saeta_tt = mtrec[:, 13:-1]
-
-    # ========================================================================== #
-    # ===================== R E P R E S E N T A T I O N S ====================== #
-    # ========================================================================== #
-
-    if config["single_run"]["plot_representations"]:
-        prob_tt = mtrec[:, -1]
-        prob_kf = m_stat[:, -1]
-        k_mat_gene = mdat
-        # plot_detector(fig_id=f"cut = {kfcut}", plt_title=f"Track Finding (KF)", cells=True,
-        #               k_mat=k_mat_gene, mtrack=mtrk, mrec=saeta_kf, prob_ary=prob_kf)
-        plot_detector(fig_id=f"cut = {config['tt_cut']}", plt_title=f"Track Fitting (TT)", cells=True,
-                      k_mat=k_mat_gene, mtrack=mtrk, mrec=saeta_tt, prob_ary=prob_tt)
-        k_mat_rec = mtrec[:, 1:13]
-        # plot_detector(fig_id='Id-Rec', plt_title="Reconstructed by Indices", cells=True,
-        #               k_mat=k_mat_rec)
         plt.show()
 
-    if config["single_run"]["final_prints"]:
-        print("# ================ P R I N T S ================ #")
-        print(f"Generated SAETAs:\n{mtrk}\n")
-        print(f"Track Finding SAETAs:\n{saeta_kf}\n")
-        print(f"Track Fitting SAETAs:\n{saeta_tt}")
+    @staticmethod
+    def plot_config(fig_id: str or int = None, plt_title: str = None):
+        # Plot configuration
+        if fig_id is None:
+            fig_id = 0
+        fig = plt.figure(fig_id)
+        ax = fig.gca(projection='3d')
+        if plt_title is not None:
+            ax.set_title(plt_title)
+        ax.set_xlabel('X axis / mm')
+        ax.set_ylabel('Y axis / mm')
+        ax.set_zlabel('Z axis / mm')
+        ax.set_xlim([0, LENX])
+        ax.set_ylim([0, LENY])
+        ax.set_zlim([VZ0[-1], VZ0[0]])
+        return ax
+
+    def plot_saetas(self, vector, fig_id: int or str or None = None,
+                    plt_title=None, lbl: str = 'Vector', grids: bool = False,
+                    frmt_color: str = "green", frmt_marker: str = "--", prob_s=None, ax=None):
+        """
+        Config Function for plot any SAETA with 6 parameters
+
+        :param vector: The SAETA vector [X0, XP, Y0, YP, T0, S0]
+        :param fig_id: Identification for the plot window
+        :param plt_title:  Title for the plot
+        :param lbl: Label for the SAETA
+        :param grids: Set cell grids (higher CPU requirements, not recommendable)
+        :param frmt_color: Format color for the SAETA representation
+        :param frmt_marker: Format marker for the SAETA representation
+        :param prob_s: value with alpha to fade SAETA.
+        """
+        # Plot configuration
+        if ax is None:
+            ax = self.plot_config(fig_id=fig_id, plt_title=plt_title)
+        # if fig_id is None:
+        #     fig_id = 'State Vectors'
+        # fig = plt.figure(fig_id)
+        # ax = fig.gca(projection='3d')
+        # if plt_title is not None:
+        #     ax.set_title(plt_title)
+        # ax.set_xlabel('X axis / mm')
+        # ax.set_ylabel('Y axis / mm')
+        # ax.set_zlabel('Z axis / mm')
+        # ax.set_xlim([0, LENX])
+        # ax.set_ylim([0, LENY])
+        # ax.set_zlim([VZ0[-1], VZ0[0]])
+
+        # Unpack values
         try:
-            print(f"\nTrack Finding DIFFERENCES:\n{saeta_kf - mtrk} || Prob {mtrec[:, -1]}\n")
-            print(f"Track Fitting DIFFERENCES:\n{saeta_tt - mtrk} || Prob {mtrec[:, -1]}")
+            x0, xp, y0, yp, t0, s0 = vector
         except ValueError:
-            print(f"\nProb KF {m_stat[:, -1]}")
-            print(f"Prob TT {mtrec[:, -1]}")
-            pass
-        print("# ============================================= #")
+            x0, xp, y0, yp, t0, s0 = vector[0]
 
-    if config["single_run"]["save_diff"]:
-        with open("saetas_file.csv", "a+") as f:
-            try:
-                relative_saeta = saeta_tt[0] - mtrk[0]
-                X0, XP, Y0, YP, T0, S0 = relative_saeta
-                prb = mtrec[:, -1][0]
-                row = f"{X0},{XP},{Y0},{YP},{T0},{S0},{prb}\n"
-                f.write(row)
-            except IndexError:
-                print('IndexError: Wait, man...')
-                pass
+        # Definition of variables
+        z0 = VZ0[0]  # Detector Top Height
+        z1 = VZ0[-1]  # Detector Bottom Height
+        dz = z0 - z1  # Detector Height
+        x1 = xp * dz
+        y1 = yp * dz
 
-# ========================================================================== #
-# ========================== E F F I C I E N C Y =========================== #
-# ========================================================================== #
+        # Plot Vector
+        x = np.array([x0, x0 + x1])
+        y = np.array([y0, y0 + y1])
+        z = np.array([z0, z1])
+        if prob_s is not None:
+            if 1 >= prob_s >= 0.9:
+                frmt_color = "#FF0000"
+            elif 0.9 > prob_s >= 0.6:
+                frmt_color = "#FF5000"
+            elif 0.6 > prob_s >= 0.3:
+                frmt_color = "#FFA000"
+            elif 0.3 > prob_s >= 0:
+                frmt_color = "#FFF000"
+            else:
+                raise Exception(f"Ojo al dato: Prob = {prob_s}")
+        ax.plot(x, y, z, linestyle=frmt_marker, color=frmt_color, label=lbl)
+        ax.legend(loc='best')
 
-elif config["efficiency"]["do"]:
-    nb_tracks = 3
-    bins_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    all_bins = np.zeros([0, len(bins_list) - 1], dtype=np.uint16)
+        # Plot cell grid
+        if grids:
+            for zi in [-7000]:
+                for yi in np.arange(-0.5, 10.5 + 1):
+                    for xi in np.arange(-0.5, 12.5 + 1):
+                        plt.plot([-0.5, 12.5], [yi, yi], [zi, zi], 'k', alpha=0.1)
+                        plt.plot([xi, xi], [-0.5, 10.5], [zi, zi], 'k', alpha=0.1)
+        ax.legend(loc='best')
 
-    single_event = GenerateEvent(in_track=nb_tracks)
+    def plot_hit_ids(self, k_vec, fig_id: str = None, plt_title: str or None = None,
+                     digi_trk: bool = True, cells: bool = True,
+                     lbl: str = 'Digitized', frmt_color: str = "green", frmt_marker: str = ":", ax=None):
+        """
+        Config Function for plot any set of hits
 
-    print("Completed percentage of efficiency:")
-    points = 100
-    for cut in range(1, points):
-        cut /= points
-        kf_cut = cut
-        tt_cut = 0
-        n_rec = np.array([], dtype=np.uint8)
-        if config["efficiency"]["prints"]:
-            print(f"{int(cut * 100)}%")
-        for run in range(1000):
-            np.random.seed(int(time.time() * 1e6) % 2 ** 32)
+        :param k_vec: Set of hits
+        :param fig_id: Identification for the plot window
+        :param plt_title: Title for the plot
+        :param digi_trk: Set if reconstructed digitized track is shown
+        :param cells: Set if hit cell squares are shown
+        :param lbl: Label for the SAETA
+        :param frmt_color: Format of color for the SAETA representation
+        :param frmt_marker: Format of marker for the SAETA representation
+        """
+        # Set Plot - Initial Config
+        if ax is None:
+            ax = self.plot_config(fig_id=fig_id, plt_title=plt_title)
+        # if fig_id is None:
+        #     fig_id = plt_title
+        # fig = plt.figure(fig_id)
+        # ax = fig.gca(projection='3d')
+        # if plt_title is not None:
+        #     ax.set_title(plt_title)
+        # ax.set_xlabel('X axis / mm')
+        # ax.set_ylabel('Y axis / mm')
+        # ax.set_zlabel('Z axis / mm')
+        # ax.set_xlim([0, LENX])
+        # ax.set_ylim([0, LENY])
+        # ax.set_zlim([VZ0[-1], VZ0[0]])
 
-            single_event.gene_tracks()
+        try:
+            x = k_vec[np.arange(0, 12, 3)] * WCX
+            y = k_vec[np.arange(1, 12, 3)] * WCY
+        except ValueError:
+            x = k_vec[0][np.arange(0, 12, 3)] * WCX
+            y = k_vec[0][np.arange(1, 12, 3)] * WCY
 
-            mdet = single_event.get_mdet_output()
+        if cells:
+            for ip in range(NPLAN):
+                p = Rectangle(xy=(x[ip] - 0.5 * WCX, y[ip] - 0.5 * WCY),
+                              width=WCX, height=WCY, alpha=0.5,
+                              facecolor='#AF7AC5', edgecolor='#9B59B6', fill=True)
+                ax.add_patch(p)
+                art3d.pathpatch_2d_to_3d(p, z=VZ0[ip], zdir="z")
 
-            kalman_filter = TrackFinding(mdet_out=mdet)
+        if digi_trk:
+            ax.plot(x, y, VZ0, linestyle=frmt_marker, color=frmt_color, label=lbl)
+        ax.plot(x, y, VZ0, 'k.', alpha=0.9)
 
-            m_stat, mtrec = kalman_filter.kalman_filter_find()
+        ax.legend(loc='best')
 
-            saeta_kf = m_stat[:, 13:-1]
-            saeta_tt = mtrec[:, 13:-1]
+    def plot_detector(self, k_mat=None, fig_id=None, plt_title='Matrix Rays',
+                      cells: bool = False, mtrack=None, mrec=None, prob_ary=None):
+        """
+        Config function for plot sets of hits and SAETAs
 
-            n_rec = np.append(n_rec, saeta_kf.shape[0])
-        if config["efficiency"]["plots"]:
-            # plot histogram
-            plt.figure(f"Cut {cut}")
-            n, bins, _ = plt.hist(n_rec, bins=bins_list)
-            mids = (bins[1:] + bins[:-1]) / 2
-            mean = np.average(mids, weights=n)
-            var = np.average((mids - mean) ** 2, weights=n)
-            std = np.sqrt(var)
-            plt.title(f"kf_cut: {kf_cut} | Mean: {mean:.3f}, Var: {var:.3f}, Std: {std:.3f}")
-            # plt.show()
-            # plt.close(f"Cut {cut}")
-        else:
-            n, bins = np.histogram(n_rec, bins=bins_list)
-        all_bins = np.vstack((all_bins, n))
-    all_bins = all_bins.astype(np.uint16).T
-    plt.matshow(all_bins)
-    if config["efficiency"]["plots"]:
-        plt.show()
-    if config["efficiency"]["save_txt"]:
-        np.savetxt(f"all_bins_{nb_tracks}_tracks.txt", all_bins)
+        :param k_mat: Matrix with all hits indices and times
+        :param fig_id: Identification for the plot window
+        :param plt_title: Title for the plot
+        :param cells: Set if hit cell squares are shown
+        :param mtrack: Array with all SAETAs generated
+        :param mrec: Array with all SAETAs reconstructed
+        :param prob_ary: Array with probabilities sorted by tracks order.
+        """
+        # Set Plot - Initial Config
+        ax = self.plot_config(fig_id=fig_id, plt_title=plt_title)
+        # if fig_id is None:
+        #     fig_id = plt_title
+        # fig = plt.figure(fig_id)
+        # ax = fig.gca(projection='3d')
+        # ax.set_title(plt_title)
+        # ax.set_xlabel('X axis / mm')
+        # ax.set_ylabel('Y axis / mm')
+        # ax.set_zlabel('Z axis / mm')
+        # ax.set_xlim([0, LENX])
+        # ax.set_ylim([0, LENY])
+        # ax.set_zlim([VZ0[-1], VZ0[0]])
 
-else:
-    if config['single_run']['do'] == config['efficiency']['do']:
-        # print("Ojo cuidao, atento a los Settings de config (single_run = efficiency = False?)")
-        print(f"0j0 -> config['single_run']['do'] = config['efficiency']['do'] "
-              f"= {config['single_run']['do']}")
-    else:
-        print("Something Wrong!")
+        # Plot Generated Tracks (SAETAs)
+        if mtrack is not None:
+            for trk in range(mtrack.shape[0]):
+                self.plot_saetas(mtrack[trk], fig_id=fig_id,
+                                 lbl=f'Gene. {trk + 1}', frmt_color='#3498DB', frmt_marker='--', ax=ax)
+
+        # Plot Digitized Tracks (Hits By Indices)
+        if k_mat is not None:
+            for trk in range(k_mat.shape[0]):
+                self.plot_hit_ids(k_mat[trk], fig_id=fig_id,
+                                  lbl=f'Digi. {trk + 1}', frmt_color='#196F3D', frmt_marker=':', cells=cells, ax=ax)
+
+        # Plot Reconstructed Tracks (SAETAs)
+        if mrec is not None:
+            for rec in range(mrec.shape[0]):
+                self.plot_saetas(mrec[rec], fig_id=fig_id,
+                                 lbl=f'Reco. {rec + 1}', frmt_color='b', frmt_marker='-',
+                                 prob_s=prob_ary[rec], ax=ax)
+
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

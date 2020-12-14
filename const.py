@@ -1,9 +1,45 @@
 import numpy as np
-import json
 
-# Read Configurations from config.json
-with open("config.json", "r") as config_file:
-    config = json.load(config_file)
+import_config = False
+if import_config:
+    import json
+
+    # Read Configurations from config.json
+    with open("config.json", "r") as config_file:
+        config = json.load(config_file)
+else:
+    config = {
+        "rd_seed": 0,
+        "kf_cut": 0.6,
+        "tt_cut": 1e-5,
+        "tracks_number": 2,
+        "single_run": {
+            "do": True,
+            "plot_representations": True,
+            "final_prints": False,
+            "save_diff": False
+        },
+        "efficiency": {
+            "do": False,
+            "prints": True,
+            "plots": True,
+            "save_txt": False
+        }
+    }
+
+"""
+#   --   S A V E   D I F F E R E N C I E S   --   #
+___________________ (save_diff) ___________________
+
+Set if save differences between parameters of the generated and reconstructed 
+SAETAs,
+    Sgen = [X0g, XPg, Y0g, YPg, T0g, S0g]
+    Srec = [X0r, XPr, Y0r, YPr, T0r, S0r]
+on 'saetas_file.csv'
+(X0r - X0g), (XPr - XPg), (Y0r - Y0g), (YPr - YPg), (T0r - T0g), (S0r - S0g)
+[..., ..., ..., ..., ..., ..., ..., ..., ...]
+on append mode.
+"""
 
 # ========================================================================== #
 # ============================ C O N S T A N T S =========================== #

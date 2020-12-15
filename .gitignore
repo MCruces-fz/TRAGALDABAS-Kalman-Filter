@@ -12,6 +12,7 @@ all_bins_*
 *.jpg
 *.png
 *.pdf
+*.dat
 .idea/
 
 # Distribution / packaging

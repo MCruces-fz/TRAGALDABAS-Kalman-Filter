@@ -654,9 +654,57 @@ class TrackFinding:
         K = np.dot(Cn, np.dot(H.T, wghts))
         return K, wghts
 
+    @staticmethod
+    def input_saeta_2planes(xi, yi, timei, zi, xj, yj, timej, zj):
+        """
+        Saeta2Planes calculates a saeta between 2 planes. A simple non-linear model used.
+        Used to fill an non-zero input saeta.
+
+        :param xi: To
+        :param xj: From
+        :return: The output saeta has the form (X0,X',Y0,Y',T0,S)
+        """
+        S2 = np.zeros([6])
+        dz = zi - zj
+        S2[0] = (xj * zi - xi * zj) / dz
+        S2[1] = (xi - xj) / dz
+        S2[2] = (yj * zi - yi * zj) / dz
+        S2[3] = (yi - yj) / dz
+        S2[4] = (timej * zi - timei * zj) / dz
+        S2[5] = (timei - timej) / dz
+        return S2
+
+    def step_filter(self, ri, Ci, zi, xj, yj, timej, zj):
+        V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
+        # Step 2. - PREDICTION
+        rip = self.transport_vector(ri, ks=1, dz=(zj - zi))  # XP == YP == 0 => ks == 1
+        Cip = self.transport_matrix(Ci, ks=1, dz=(zj - zi))
+
+        # # Step 3. - PROCESS NOISE [At most 10%]
+        # r4p *= 1 + np.random.uniform(low=-0.1, high=0.1, size=r4p.shape)
+        # C4p *= 1 + np.random.uniform(low=-0.1, high=0.1, size=C4p.shape)
+
+        # Step 4. - FILTRATION
+        m = np.array([xj, yj, timej])  # Measurement
+
+        H = self.set_jacobi()
+
+        # Matrix K gain
+        K, weights = self.set_mKgain(H, Cip, V)
+
+        # New r vector
+        mr = np.dot(H, rip)
+        delta_m = m - mr
+        delta_r = np.dot(K, delta_m)
+        rj = rip + delta_r
+
+        # New C k_mat
+        Cj = Cip - np.dot(K, np.dot(H, Cip))
+        return rj, Cj
+
     def find_tracks(self):
         if self.root_input is not None and self.mdet is None:
-            pass
+            self.kalman_filter_root()
         elif self.mdet is not None and self.root_input is None:
             return self.kalman_filter_find()
         else:
@@ -664,7 +712,70 @@ class TrackFinding:
                             "TrackFinding only needs mdet_out OR root_out")
 
     def kalman_filter_root(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
-        pass
+        """
+        Main Finding Function using Kalman Filter Algorithm
+
+        :param mdet: Matrix with columns: (nhits, kx, ky, time)
+        :param dcut:
+        :param tcut:
+        :return:
+            - mstat: Hello
+            - reco_saetas: World!
+        """
+        # ================ MAIN FUNCTION =============== #
+
+        # C0 = diag_matrix(NPAR, [1 / WX, VSLP, 1 / WY, VSLP, 1 / WT, VSLN])  # Error k_mat
+        V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
+
+        nhits = self.root_input.shape[0]
+        for i4 in range(nhits):  # ============================================================================ PLANE 4
+            hit4 = self.root_input[i4]
+            if np.all(hit4 == 0): continue
+            trbnum4, cell4, col4, row4, x4, y4, z4, time4, charge4 = hit4
+            if trbnum4 != 3: continue
+            plane_hits = 1
+
+            for i3 in range(nhits):  # ======================================================================== PLANE 3
+                if i3 == i4: continue
+                hit3 = self.root_input[i3]
+                if np.all(hit3 == 0): continue
+                trbnum3, cell3, col3, row3, x3, y3, z3, time3, charge3 = hit3
+                if trbnum3 != 2: continue
+
+                # Step 1. - INITIALIZATION
+                r4 = np.array([x4, 0, y4, 0, time4, SC])  # Initial Guess for the saeta in fourth plane
+                C4 = diag_matrix(NPAR, [1 / WX, VSLP, 1 / WY, VSLP, 1 / WT, VSLN])  # Error matrix (Initial Guess)
+
+                r3, C3 = self.step_filter(r4, C4, z4, x3, y3, time3, z3)
+                print(r4)
+                print(r3)
+
+                for i2 in range(nhits):  # ==================================================================== PLANE 2
+                    if i2 == i3 or i2 == i4: continue
+                    hit2 = self.root_input[i2]
+                    if np.all(hit2 == 0): continue
+                    trbnum2, cell2, col2, row2, x2, y2, z2, time2, charge2 = hit2
+                    if trbnum2 != 1: continue
+
+                    r2, C2 = self.step_filter(r3, C3, z3, x2, y2, time2, z2)
+
+                    for i1 in range(nhits):  # ================================================================ PLANE 1
+                        if i1 == i2 or i1 == i3 or i1 == i4: continue
+                        hit1 = self.root_input[i1]
+                        if np.all(hit1 == 0): continue
+                        trbnum1, cell1, col1, row1, x1, y1, z1, time1, charge1 = hit1
+                        if trbnum1 != 0: continue
+                        dist = np.sqrt((x1 - x4) * (x1 - x4) +
+                                       (y1 - y4) * (y1 - y4) +
+                                       (z1 - z4) * (z1 - z4))  # Total track distance
+
+                        r1, C1 = self.step_filter(r2, C2, z2, x1, y1, time1, z1)
+
+                        if trbnum4 == 3 and trbnum3 == 2 and trbnum2 == 1 and trbnum1 == 0:
+                            s_init = self.input_saeta_2planes(x3, y3, time3, z3, x4, y4, time4, z4)
+                            # print(f"({i1}, {i2}, {i3}, {i4}) s_init = {s_init}")
+
+                            hits = [i1, i2, i3, i4]
 
     def kalman_filter_find(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         """
@@ -1003,7 +1114,6 @@ class Represent3D:
                 self.plot_saetas(mrec[rec], fig_id=fig_id,
                                  lbl=f'Reco. {rec + 1}', frmt_color='b', frmt_marker='-',
                                  prob_s=prob_ary[rec], ax=ax)
-
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

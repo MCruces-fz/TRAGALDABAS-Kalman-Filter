@@ -32,7 +32,7 @@ for cut in range(1, points):
 
         kalman_filter = TrackFinding(mdet_inp=mdet)
 
-        all_reco_saetas, reco_saetas = kalman_filter.kalman_filter_4_planes()
+        all_reco_saetas, reco_saetas = kalman_filter.trgaldabas_kf_4_planes()
 
         saeta_kf = all_reco_saetas[:, 13:-1]
         saeta_tt = reco_saetas[:, 13:-1]

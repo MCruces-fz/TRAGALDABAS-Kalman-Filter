@@ -404,13 +404,13 @@ class TrackFinding:
             raise Exception("Something went wrong choosing track-finding method ->"
                             "TrackFinding only needs mdet_inp OR root_inp")
         if NPLAN == 4:
-            return self.kalman_filter_4_planes()
+            return self.trgaldabas_kf_4_planes()
         if NPLAN == 3:
-            return self.kalman_filter_3_planes()
+            return self.tragaldabas_kf_3_planes()
         else:
             raise Exception("Only supported 3 or 4 detector planes")
 
-    def kalman_filter_4_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+    def trgaldabas_kf_4_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         """
         Main Finding Function using Kalman Filter Algorithm
 
@@ -533,7 +533,7 @@ class TrackFinding:
             m_stat = np.delete(mtrec, to_delete, axis=0)
         return m_stat
 
-    def kalman_filter_3_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+    def tragaldabas_kf_3_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         pass
 
 
@@ -551,7 +551,7 @@ if __name__ == "__main__" and find_debug:
     print(gened_trks)
 
     kalman_filter = TrackFinding(mdet_inp=mdet_output)
-    m_stat, m_trec = kalman_filter.kalman_filter_4_planes()
+    m_stat, m_trec = kalman_filter.trgaldabas_kf_4_planes()
 
 
 

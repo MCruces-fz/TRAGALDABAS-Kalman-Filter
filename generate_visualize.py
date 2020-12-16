@@ -47,9 +47,9 @@ mdet = single_event.get_mdet_output()
 mdat = single_event.hit_digits
 
 # ================== ANALYSIS ================== #
-kalman_filter = TrackFinding(mdet_out=mdet)
+kalman_filter = TrackFinding(mdet_inp=mdet)
 
-m_stat, mtrec = kalman_filter.kalman_filter_find()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+m_stat, mtrec = kalman_filter.kalman_filter_4_planes()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
 mdet_xy = kalman_filter.mdet_xy
 
 saeta_kf = m_stat[:, 13:-1]
@@ -119,9 +119,9 @@ if __name__ == "__main__":
         mdat = sim_evt.hit_digits
 
         # ================== ANALYSIS ================== #
-        track_finding = TrackFinding(mdet_out=mdet)
+        track_finding = TrackFinding(mdet_inp=mdet)
 
-        all_reco_saetas, reco_saetas = track_finding.kalman_filter_find()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+        all_reco_saetas, reco_saetas = track_finding.kalman_filter_4_planes()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
         mdet_xy = track_finding.mdet_xy
 
         saeta_kf = all_reco_saetas[:, 13:-1]
@@ -200,9 +200,9 @@ if __name__ == "__main__":
 
                 mdet = sim_evt.get_mdet_output()
 
-                track_finding = TrackFinding(mdet_out=mdet)
+                track_finding = TrackFinding(mdet_inp=mdet)
 
-                all_reco_saetas, reco_saetas = track_finding.kalman_filter_find()
+                all_reco_saetas, reco_saetas = track_finding.kalman_filter_4_planes()
 
                 saeta_kf = all_reco_saetas[:, 13:-1]
                 saeta_tt = reco_saetas[:, 13:-1]

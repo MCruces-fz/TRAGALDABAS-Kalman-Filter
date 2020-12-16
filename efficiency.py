@@ -30,9 +30,9 @@ for cut in range(1, points):
 
         mdet = sim_evt.get_mdet_output()
 
-        kalman_filter = TrackFinding(mdet_out=mdet)
+        kalman_filter = TrackFinding(mdet_inp=mdet)
 
-        all_reco_saetas, reco_saetas = kalman_filter.kalman_filter_find()
+        all_reco_saetas, reco_saetas = kalman_filter.kalman_filter_4_planes()
 
         saeta_kf = all_reco_saetas[:, 13:-1]
         saeta_tt = reco_saetas[:, 13:-1]

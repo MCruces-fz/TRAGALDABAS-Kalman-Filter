@@ -1,6 +1,6 @@
 import numpy as np
 
-import_config = False
+import_config = True
 if import_config:
     import json
 
@@ -15,8 +15,8 @@ else:
         "tracks_number": 2,
         "single_run": {
             "do": True,
-            "plot_representations": True,
-            "final_prints": False,
+            "plot_representations": False,
+            "final_prints": True,
             "save_diff": False
         },
         "efficiency": {

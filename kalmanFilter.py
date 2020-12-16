@@ -16,7 +16,7 @@ from scipy import stats
 from matplotlib.patches import Rectangle
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.pyplot as plt
-import time
+import copy
 
 from typing import List
 
@@ -40,6 +40,21 @@ if config["single_run"]["plot_representations"]:
 # ========================================================================== #
 # ================ G E N E R A T I O N   F U N C T I O N S ================= #
 # ========================================================================== #
+
+
+def empty(shape: List[int]) -> list:
+    """
+    Returns an empty list of lists with the desired dimension
+
+    :param shape: List with the dimensions of the output list
+    :return: List with the desired dimension
+    """
+    if len(shape) == 1:
+        return [[] for i in range(shape[0])]
+    items = shape[0]
+    newshape = shape[1:]
+    sublist = empty(newshape)
+    return [copy.deepcopy(sublist) for i in range(items)]
 
 
 def diag_matrix(dim: int, diag: list or object):
@@ -246,12 +261,15 @@ class GenerateEvent:
         """
         Emulates ROOT Trufa Output
 
-        :return root_out: 2D Array with hits in rows and
+        :return root_inp: 2D Array with hits in rows and
             trbnum, cell, col, row, x, y, z, time, charge
             as columns
         """
-        self.gene_tracks()
-        self.trag_digitization()
+
+        if np.all(self.hit_digits == 0):
+            if self.tracks_number is None:
+                self.gene_tracks()
+            self.trag_digitization()
 
         trbnum, cell, col, row, x, y, z, time, charge = [np.array([], dtype=np.float32)] * 9
 
@@ -272,7 +290,7 @@ class GenerateEvent:
 
         self.root_output = np.vstack((trbnum, cell, col, row, x, y, z, time, charge)).T
         np.random.shuffle(self.root_output)
-        # return root_out
+        # return root_inp
 
     def get_root_output(self, new_run: bool = False):
         if self.root_output is None or new_run:
@@ -481,19 +499,19 @@ if __name__ == "__main__" and fit_debug:
 
 
 class TrackFinding:
-    def __init__(self, root_out: np.array or None = None,
-                 mdet_out: np.array or None = None,
-                 tim_track: bool = True):
+    def __init__(self, root_inp: np.array or None = None,
+                 mdet_inp: np.array or None = None,
+                 fit_tracks: bool = False):
 
-        self.root_input = root_out
+        self.root_input = root_inp
 
-        self.mdet = mdet_out
+        self.mdet = mdet_inp
         self.mdet_xy = None
 
-        if tim_track:
-            self.tim_track = TrackFitting()
+        if fit_tracks:
+            self.fit_tracks = TrackFitting()
         else:
-            self.tim_track = None
+            self.fit_tracks = None
 
     @staticmethod
     def set_transport_func(ks: float, dz: int) -> np.array:
@@ -674,110 +692,43 @@ class TrackFinding:
         S2[5] = (timei - timej) / dz
         return S2
 
-    def step_filter(self, ri, Ci, zi, xj, yj, timej, zj):
-        V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
-        # Step 2. - PREDICTION
-        rip = self.transport_vector(ri, ks=1, dz=(zj - zi))  # XP == YP == 0 => ks == 1
-        Cip = self.transport_matrix(Ci, ks=1, dz=(zj - zi))
+    def root2mdet(self) -> np.array:
+        """
+        Change root format to our mdet format
 
-        # # Step 3. - PROCESS NOISE [At most 10%]
-        # r4p *= 1 + np.random.uniform(low=-0.1, high=0.1, size=r4p.shape)
-        # C4p *= 1 + np.random.uniform(low=-0.1, high=0.1, size=C4p.shape)
+        :return: array with mdet format
+        """
+        if self.root_input is None:
+            return 0
 
-        # Step 4. - FILTRATION
-        m = np.array([xj, yj, timej])  # Measurement
+        mdet = empty([NPLAN])
+        for trbnum, cell, col, row, x, y, z, time, charge in self.root_input:
+            mdet[int(trbnum)].extend([col, row, time])
 
-        H = self.set_jacobi()
+        mdet = [[len(plane) / NDAC] + plane for plane in mdet]
 
-        # Matrix K gain
-        K, weights = self.set_mKgain(H, Cip, V)
+        num_hits = [plane[0] for plane in mdet]
+        max_hits = max(num_hits)
 
-        # New r vector
-        mr = np.dot(H, rip)
-        delta_m = m - mr
-        delta_r = np.dot(K, delta_m)
-        rj = rip + delta_r
-
-        # New C k_mat
-        Cj = Cip - np.dot(K, np.dot(H, Cip))
-        return rj, Cj
+        mdet = np.array([plane + [0] * int(max_hits - plane[0]) for plane in mdet])
+        return mdet
 
     def find_tracks(self):
         if self.root_input is not None and self.mdet is None:
-            self.kalman_filter_root()
-        elif self.mdet is not None and self.root_input is None:
-            return self.kalman_filter_find()
+            self.mdet = self.root2mdet()
+        elif self.mdet is not None:
+            pass
         else:
             raise Exception("Something went wrong choosing track-finding method ->"
-                            "TrackFinding only needs mdet_out OR root_out")
+                            "TrackFinding only needs mdet_inp OR root_inp")
+        if NPLAN == 4:
+            return self.kalman_filter_4_planes()
+        if NPLAN == 3:
+            return self.kalman_filter_3_planes()
+        else:
+            raise Exception("Only supported 3 or 4 detector planes")
 
-    def kalman_filter_root(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
-        """
-        Main Finding Function using Kalman Filter Algorithm
-
-        :param mdet: Matrix with columns: (nhits, kx, ky, time)
-        :param dcut:
-        :param tcut:
-        :return:
-            - mstat: Hello
-            - reco_saetas: World!
-        """
-        # ================ MAIN FUNCTION =============== #
-
-        # C0 = diag_matrix(NPAR, [1 / WX, VSLP, 1 / WY, VSLP, 1 / WT, VSLN])  # Error k_mat
-        V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
-
-        nhits = self.root_input.shape[0]
-        for i4 in range(nhits):  # ============================================================================ PLANE 4
-            hit4 = self.root_input[i4]
-            if np.all(hit4 == 0): continue
-            trbnum4, cell4, col4, row4, x4, y4, z4, time4, charge4 = hit4
-            if trbnum4 != 3: continue
-            plane_hits = 1
-
-            for i3 in range(nhits):  # ======================================================================== PLANE 3
-                if i3 == i4: continue
-                hit3 = self.root_input[i3]
-                if np.all(hit3 == 0): continue
-                trbnum3, cell3, col3, row3, x3, y3, z3, time3, charge3 = hit3
-                if trbnum3 != 2: continue
-
-                # Step 1. - INITIALIZATION
-                r4 = np.array([x4, 0, y4, 0, time4, SC])  # Initial Guess for the saeta in fourth plane
-                C4 = diag_matrix(NPAR, [1 / WX, VSLP, 1 / WY, VSLP, 1 / WT, VSLN])  # Error matrix (Initial Guess)
-
-                r3, C3 = self.step_filter(r4, C4, z4, x3, y3, time3, z3)
-                print(r4)
-                print(r3)
-
-                for i2 in range(nhits):  # ==================================================================== PLANE 2
-                    if i2 == i3 or i2 == i4: continue
-                    hit2 = self.root_input[i2]
-                    if np.all(hit2 == 0): continue
-                    trbnum2, cell2, col2, row2, x2, y2, z2, time2, charge2 = hit2
-                    if trbnum2 != 1: continue
-
-                    r2, C2 = self.step_filter(r3, C3, z3, x2, y2, time2, z2)
-
-                    for i1 in range(nhits):  # ================================================================ PLANE 1
-                        if i1 == i2 or i1 == i3 or i1 == i4: continue
-                        hit1 = self.root_input[i1]
-                        if np.all(hit1 == 0): continue
-                        trbnum1, cell1, col1, row1, x1, y1, z1, time1, charge1 = hit1
-                        if trbnum1 != 0: continue
-                        dist = np.sqrt((x1 - x4) * (x1 - x4) +
-                                       (y1 - y4) * (y1 - y4) +
-                                       (z1 - z4) * (z1 - z4))  # Total track distance
-
-                        r1, C1 = self.step_filter(r2, C2, z2, x1, y1, time1, z1)
-
-                        if trbnum4 == 3 and trbnum3 == 2 and trbnum2 == 1 and trbnum1 == 0:
-                            s_init = self.input_saeta_2planes(x3, y3, time3, z3, x4, y4, time4, z4)
-                            # print(f"({i1}, {i2}, {i3}, {i4}) s_init = {s_init}")
-
-                            hits = [i1, i2, i3, i4]
-
-    def kalman_filter_find(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+    def kalman_filter_4_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         """
         Main Finding Function using Kalman Filter Algorithm
 
@@ -879,24 +830,29 @@ class TrackFinding:
                                     m_stat = np.vstack((m_stat, vstat_cutf))
 
                                     # Tim Track Analysis (Track Fitting)
-                                    vs, prob = self.tim_track.tim_track_fit(vstat_fcut=vstat_cutf)
-                                    if prob > tcut:
-                                        k_vector = vstat_cutf[0:13]
-                                        v_stat_tt = np.hstack((k_vector, vs, prob))
-                                        mtrec = np.vstack((mtrec, v_stat_tt))
+                                    if self.fit_tracks is not None:
+                                        vs, prob = self.fit_tracks.tim_track_fit(vstat_fcut=vstat_cutf)
+                                        if prob > tcut:
+                                            k_vector = vstat_cutf[0:13]
+                                            v_stat_tt = np.hstack((k_vector, vs, prob))
+                                            mtrec = np.vstack((mtrec, v_stat_tt))
                                 break  # It takes another hit configuration and saves vstat in all_reco_saetas
-        to_delete = []
-        for i in range(len(mtrec)):
-            for j in range(i + 1, len(mtrec)):
-                if np.all(mtrec[i, 1:4] == mtrec[j, 1:4]):
-                    if mtrec[i, -1] > mtrec[j, -1]:
-                        # print(f"Deleted index {j} because {reco_saetas[j, -1]:.4f} < {reco_saetas[i, -1]:.4f}")
-                        to_delete.append(j)
-                    else:
-                        # print(f"Deleted index {i} because {reco_saetas[i, -1]:.4f} < {reco_saetas[j, -1]:.4f}")
-                        to_delete.append(i)
-        m_trec = np.delete(mtrec, to_delete, axis=0)
-        return m_stat, m_trec
+        if self.fit_tracks is not None:
+            to_delete = []
+            for i in range(len(mtrec)):
+                for j in range(i + 1, len(mtrec)):
+                    if np.all(mtrec[i, 1:4] == mtrec[j, 1:4]):
+                        if mtrec[i, -1] > mtrec[j, -1]:
+                            # print(f"Deleted index {j} because {reco_saetas[j, -1]:.4f} < {reco_saetas[i, -1]:.4f}")
+                            to_delete.append(j)
+                        else:
+                            # print(f"Deleted index {i} because {reco_saetas[i, -1]:.4f} < {reco_saetas[j, -1]:.4f}")
+                            to_delete.append(i)
+            m_stat = np.delete(mtrec, to_delete, axis=0)
+        return m_stat
+
+    def kalman_filter_3_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+        pass
 
 
 find_debug = False
@@ -910,8 +866,8 @@ if __name__ == "__main__" and find_debug:
     gened_trks = event.generated_tracks
     print(gened_trks)
 
-    kalman_filter = TrackFinding(mdet_out=mdet_output)
-    m_stat, m_trec = kalman_filter.kalman_filter_find()
+    kalman_filter = TrackFinding(mdet_inp=mdet_output)
+    m_stat, m_trec = kalman_filter.kalman_filter_4_planes()
 
 
 # ========================================================================== #

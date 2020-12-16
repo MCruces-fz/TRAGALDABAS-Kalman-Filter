@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-import time
 
-from kalmanFilter import GenerateEvent, TrackFinding, Represent3D
+from event_simulation import GenerateEvent
+from utils import Represent3D
+from tracks_reconstruction import TrackFinding
 
 from const import *
 

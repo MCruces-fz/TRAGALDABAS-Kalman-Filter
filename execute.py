@@ -1,8 +1,12 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from kalmanFilter import GenerateEvent, TrackFinding, print_saetas, print_tables
+from const import *  # <- config is imported here
 
-np.random.seed(3)
+from utils import print_saetas
+from event_simulation import GenerateEvent
+from tracks_reconstruction import TrackFinding
+
+# Randomize if rd_seed is an integer seed
+if config["rd_seed"] is not None:
+    np.random.seed(config["rd_seed"])
 
 sim_evt = GenerateEvent()
 

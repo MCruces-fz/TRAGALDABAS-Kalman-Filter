@@ -1,4 +1,4 @@
-from kalmanFilter import GenerateEvent, TrackFinding
+from tracks_reconstruction import GenerateEvent, TrackFinding
 import time
 import matplotlib.pyplot as plt
 from const import *

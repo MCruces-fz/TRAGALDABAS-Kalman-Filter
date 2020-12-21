@@ -17,3 +17,7 @@ reco_saetas = track_finding.find_tracks()
 
 print_saetas(sim_evt.generated_tracks)
 print_saetas(reco_saetas[:, 13:-1])
+
+# TODO: Crear una class Event.
+#  - class Track que herede class Event
+

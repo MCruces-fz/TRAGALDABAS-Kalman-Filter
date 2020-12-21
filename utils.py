@@ -3,6 +3,7 @@ import copy
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 import mpl_toolkits.mplot3d.art3d as art3d
+from typing import Union
 
 
 def empty(shape: list) -> list:
@@ -49,7 +50,7 @@ def print_saetas(saetas_array):
         print("")
 
 
-def print_tables(values_2d: np.array, columns: list or None = None, rows: list or None = None):
+def print_tables(values_2d: np.array, columns: Union[list, None] = None, rows: Union[list, None] = None):
     """
     Prints a table with saetas in rows and their coordinates as columns.
 
@@ -88,7 +89,7 @@ class Represent3D:
         plt.show()
 
     @staticmethod
-    def plot_config(fig_id: str or int = None, plt_title: str = None):
+    def plot_config(fig_id: Union[str, int, None] = None, plt_title: str = None):
         # Plot configuration
         if fig_id is None:
             fig_id = 0
@@ -104,7 +105,7 @@ class Represent3D:
         ax.set_zlim([VZ0[-1], VZ0[0]])
         return ax
 
-    def plot_saetas(self, vector, fig_id: int or str or None = None,
+    def plot_saetas(self, vector, fig_id: Union[str, int, None] = None,
                     plt_title=None, lbl: str = 'Vector', grids: bool = False,
                     frmt_color: str = "green", frmt_marker: str = "--", prob_s=None, ax=None):
         """
@@ -175,7 +176,7 @@ class Represent3D:
                         plt.plot([xi, xi], [-0.5, 10.5], [zi, zi], 'k', alpha=0.1)
         ax.legend(loc='best')
 
-    def plot_hit_ids(self, k_vec, fig_id: str = None, plt_title: str or None = None,
+    def plot_hit_ids(self, k_vec, fig_id: str = None, plt_title: Union[str, None] = None,
                      digi_trk: bool = True, cells: bool = True,
                      lbl: str = 'Digitized', frmt_color: str = "green", frmt_marker: str = ":", ax=None):
         """

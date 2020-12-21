@@ -25,7 +25,9 @@ if show_prints:
     for br in tree.GetListOfBranches():
         print(f"  - {br.GetName()}")
 
-root_out = np.zeros([0, 9], dtype=np.float16)
+# root_out = np.zeros([1, 0, 9], dtype=np.float16)
+# root_out = np.array([[]], dtype=np.float16)
+root_out = []
 for entry in range(nentries)[:10]:
     # Para cada evento del tree hay que cargar todas las branches sino no existe el rpchit
     ev = tree.GetEntry(entry)
@@ -58,7 +60,7 @@ for entry in range(nentries)[:10]:
         charge = fCharge.GetValue(ihit)
 
         hit_data = np.hstack((trbnum, cell, col, row, x, y, z, time, charge))
-        root_evt = np.vstack((root_out, hit_data))
+        root_evt = np.vstack((root_evt, hit_data))
 
         if show_prints:
             print(f'----------- Hit: {ihit} -----------')
@@ -71,7 +73,7 @@ for entry in range(nentries)[:10]:
             print(f'fZ: {z:.3f}')
             print(f'fTime: {time:.3f}')
             print(f'fCharge: {charge:.3f}')
-    root_out = np.vstack((root_out, root_evt))
+    root_out.append(root_evt)
 
 print(root_out)
 

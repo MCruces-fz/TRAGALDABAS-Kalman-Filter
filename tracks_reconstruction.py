@@ -14,6 +14,7 @@ Miguel Cruces
 """
 from scipy import stats
 import matplotlib.pyplot as plt
+from typing import Union
 
 from typing import List
 
@@ -103,9 +104,9 @@ class TrackFitting:
         va_out = np.dot(mG.T, np.dot(mW, d_g0))
         return va_out
 
-    def tim_track_fit(self, state_vec: np.array or None = None,
-                      cells_path: np.array or None = None,
-                      vstat_fcut: np.array or None = None):
+    def tim_track_fit(self, state_vec: Union[np.array, None] = None,
+                      cells_path: Union[np.array, None] = None,
+                      vstat_fcut: Union[np.array, None] = None):
 
         # Assign saeta and cells safely
         if state_vec is None and cells_path is None:
@@ -181,8 +182,8 @@ if __name__ == "__main__" and fit_debug:
 
 
 class TrackFinding:
-    def __init__(self, root_inp: np.array or None = None,
-                 mdet_inp: np.array or None = None,
+    def __init__(self, root_inp: Union[np.array, None] = None,
+                 mdet_inp: Union[np.array, None] = None,
                  fit_tracks: bool = False):
 
         self.root_input = root_inp

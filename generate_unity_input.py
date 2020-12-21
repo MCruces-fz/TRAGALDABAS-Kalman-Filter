@@ -1,4 +1,4 @@
-from tracks_reconstruction import GenerateEvent, TrackFinding
+from event_simulation import GenerateEvent
 from const import *
 import numpy as np
 

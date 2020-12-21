@@ -14,6 +14,7 @@ all_bins_*
 *.pdf
 *.dat
 .idea/
+unity_input_*
 
 # Distribution / packaging
 .Python

@@ -6,6 +6,31 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from typing import Union
 
 
+def for_recursive(range_list, execute_function, current_index=0, iter_list=None):
+    """
+    Source:
+    https://stackoverflow.com/questions/7186518/function-with-varying-number-of-for-loops-python
+    """
+    number_of_loops = len(range_list)
+    if iter_list is None:
+        iter_list = [0] * number_of_loops
+
+    if current_index == number_of_loops - 1:
+        for iter_list[current_index] in range_list[current_index]:
+            execute_function(iter_list)
+    else:
+        for iter_list[current_index] in range_list[current_index]:
+            for_recursive(range_list, execute_function, current_index=current_index + 1, iter_list=iter_list)
+
+
+for_debug = True
+if __name__ == "__main__" and for_debug:
+    def do_whatever(index_list):
+        return print(index_list)
+
+    for_recursive(range_list=[range(2), range(2)], execute_function=do_whatever)
+
+
 def empty(shape: list) -> list:
     """
     Returns an empty list of lists with the desired dimension
@@ -72,6 +97,7 @@ def print_tables(values_2d: np.array, columns: Union[list, None] = None, rows: U
         row_format = "{:>5}" + "{:>12.3f}" * len(values_2d[0])
         for title, line in zip(rows, values_2d):
             print(row_format.format(title, *line))
+
 
 # ========================================================================== #
 # ====================== P L O T   F U N C T I O N S ======================= #

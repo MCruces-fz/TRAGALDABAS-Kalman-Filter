@@ -289,12 +289,12 @@ class TrackFinding:
         coords = self.mdet_xy[k, ini:fin]
         return coords
 
-    def set_vstat(self, k: int, i1: int, i2: int, i3: int, i4: int, plane_hits: int, r):
+    def set_vstat(self, k: int, hits: list, plane_hits: int, r):
         """
         It sets the array:
         [ Nbr. hits, 0, 0, 0, ..., kx1, ky1, kt1, X0, XP, Y0, YP, T0, S0 ]
         """
-        idx = [[0, i1], [1, i2], [2, i3], [3, i4]]
+        idx = [[ix, hit] for ix, hit in enumerate(hits)]
         k_list = []
         for plane, hit in reversed(idx[k:]):
             kx, ky, kt, _, _, _ = self.set_params(plane, hit)
@@ -385,16 +385,19 @@ class TrackFinding:
         if self.root_input is None:
             return 0
 
+        # Fill mdet with hit values
         mdet = empty([NPLAN])
         for trbnum, cell, col, row, x, y, z, time, charge in self.root_input:
             mdet[int(trbnum)].extend([col, row, time])
 
+        # Add number of hits on each plane at the beginning of each line
         mdet = [[len(plane) / NDAC] + plane for plane in mdet]
 
-        num_hits = [plane[0] for plane in mdet]
-        max_hits = max(num_hits)
+        num_hits = [plane[0] for plane in mdet]  # List of hits in each plane
+        max_hits = max(num_hits)  # Max number of hits in one plane
 
-        mdet = np.array([plane + [0] * int(max_hits - plane[0]) for plane in mdet])
+        mdet = [plane + [0] * int(max_hits - plane[0]) * NDAC for plane in mdet]
+        mdet = np.asarray(mdet)
         return mdet
 
     def find_tracks(self):
@@ -405,14 +408,10 @@ class TrackFinding:
         else:
             raise Exception("Something went wrong choosing track-finding method ->"
                             "TrackFinding only needs mdet_inp OR root_inp")
-        if NPLAN == 4:
-            return self.trgaldabas_kf_4_planes()
-        if NPLAN == 3:
-            return self.tragaldabas_kf_3_planes()
-        else:
-            raise Exception("Only supported 3 or 4 detector planes")
 
-    def trgaldabas_kf_4_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+        return self.kalman_filter()
+
+    def kalman_filter(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
         """
         Main Finding Function using Kalman Filter Algorithm
 
@@ -440,7 +439,8 @@ class TrackFinding:
         m_stat = np.zeros([0, 20])
         mtrec = np.zeros([0, 20])
 
-        iplan1, iplan2, iplan3, iplan4 = 0, 1, 2, 3  # Index for planes T1, T2, T3, T4 respectively
+        # iplan1, iplan2, iplan3, iplan4 = 0, 1, 2, 3  # Index for planes T1, T2, T3, T4 respectively
+        lower_plane_id = NPLAN - 1
         ncel1, ncel2, ncel3, ncel4 = self.mdet[:, 0].astype(np.int)  # Nr. of hits in each plane
 
         # ================== MAIN LOOP ================= #
@@ -454,10 +454,10 @@ class TrackFinding:
                         hits = [i1, i2, i3, i4]  # Combination of chosen hit indices
 
                         # Step 1. - INITIALIZATION
-                        kx4, ky4, kt4, x0, y0, t0 = self.set_params(iplan4, i4)
+                        kx4, ky4, kt4, x0, y0, t0 = self.set_params(lower_plane_id, i4)
                         r0 = [x0, 0, y0, 0, t0, SC]  # Hypothesis
-                        r[iplan4] = r0
-                        C[iplan4] = C0
+                        r[lower_plane_id] = r0
+                        C[lower_plane_id] = C0
                         plane_hits = 1
 
                         # k: index of plane and zk: height of plane k in mm
@@ -503,7 +503,7 @@ class TrackFinding:
                             C[k] = Cn[k] - np.dot(K, np.dot(H, Cn[k]))
 
                             plane_hits += 1
-                            vstat = self.set_vstat(k, i1, i2, i3, i4, plane_hits, r)
+                            vstat = self.set_vstat(k, hits, plane_hits, r)
                             cutf, s2 = self.fcut(vstat, m, r[k], s2_prev)
                             vstat_cutf = np.hstack([vstat, cutf])
                             # print(f"vstat = {vstat_cutf}, dcut ({dcut})")
@@ -536,7 +536,7 @@ class TrackFinding:
         return m_stat
 
     def tragaldabas_kf_3_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
-        pass
+        return "No Array!!"
 
 
 find_debug = False
@@ -553,7 +553,7 @@ if __name__ == "__main__" and find_debug:
     print(gened_trks)
 
     kalman_filter = TrackFinding(mdet_inp=mdet_output)
-    m_stat, m_trec = kalman_filter.trgaldabas_kf_4_planes()
+    m_stat, m_trec = kalman_filter.kalman_filter()
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

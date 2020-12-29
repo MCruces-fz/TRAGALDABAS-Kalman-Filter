@@ -50,7 +50,7 @@ mdat = single_event.hit_digits
 # ================== ANALYSIS ================== #
 kalman_filter = TrackFinding(mdet_inp=mdet)
 
-m_stat, mtrec = kalman_filter.trgaldabas_kf_4_planes()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+m_stat, mtrec = kalman_filter.kalman_filter()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
 mdet_xy = kalman_filter.mdet_xy
 
 saeta_kf = m_stat[:, 13:-1]
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         # ================== ANALYSIS ================== #
         track_finding = TrackFinding(mdet_inp=mdet)
 
-        all_reco_saetas, reco_saetas = track_finding.trgaldabas_kf_4_planes()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+        all_reco_saetas, reco_saetas = track_finding.kalman_filter()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
         mdet_xy = track_finding.mdet_xy
 
         saeta_kf = all_reco_saetas[:, 13:-1]
@@ -203,7 +203,7 @@ if __name__ == "__main__":
 
                 track_finding = TrackFinding(mdet_inp=mdet)
 
-                all_reco_saetas, reco_saetas = track_finding.trgaldabas_kf_4_planes()
+                all_reco_saetas, reco_saetas = track_finding.kalman_filter()
 
                 saeta_kf = all_reco_saetas[:, 13:-1]
                 saeta_tt = reco_saetas[:, 13:-1]

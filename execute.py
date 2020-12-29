@@ -1,6 +1,6 @@
 from const import *  # <- config is imported here
 
-from root_unpacker import RootUnpacker
+# from root_unpacker import RootUnpacker
 from utils import print_saetas
 from event_simulation import GenerateEvent
 from tracks_reconstruction import TrackFinding
@@ -10,11 +10,11 @@ if config["rd_seed"] is not None:
     np.random.seed(config["rd_seed"])
 
 sim_evt = GenerateEvent()
-get_evt = RootUnpacker()
+# get_evt = RootUnpacker()
 
 root_output = sim_evt.get_root_output()
 # FIXME: Reconstrucción para 3 planos!!!!
-root_out = get_evt.get_root_out()
+# root_out = get_evt.get_root_out()
 
 track_finding = TrackFinding(
     root_inp=root_output,
@@ -22,6 +22,7 @@ track_finding = TrackFinding(
     fit_tracks=False
 )
 
+mdet = track_finding.mdet
 reco_saetas = track_finding.find_tracks()
 
 print_saetas(sim_evt.generated_tracks)

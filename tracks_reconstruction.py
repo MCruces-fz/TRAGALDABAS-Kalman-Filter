@@ -35,6 +35,7 @@ if config["rd_seed"] is not None:
 if config["single_run"]["plot_representations"]:
     plt.close("all")
 
+
 # ========================================================================== #
 # ================= T I M   T R A C K   F U N C T I O N S ================== #
 # ========================================================================== #
@@ -324,9 +325,9 @@ class TrackFinding:
         x0, _, y0, _, t0, s0 = vr
 
         s2 = s2_prev + \
-             (xd - x0) ** 2 / sigx2 + \
-             (yd - y0) ** 2 / sigy2 + \
-             (td - t0) ** 2 / sigt2
+            (xd - x0) ** 2 / sigx2 + \
+            (yd - y0) ** 2 / sigy2 + \
+            (td - t0) ** 2 / sigt2
 
         if s0 < 0 or s0 > smx:
             cut_f = 0
@@ -553,8 +554,6 @@ if __name__ == "__main__" and find_debug:
 
     kalman_filter = TrackFinding(mdet_inp=mdet_output)
     m_stat, m_trec = kalman_filter.trgaldabas_kf_4_planes()
-
-
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

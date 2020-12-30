@@ -1,6 +1,6 @@
 import numpy as np
 
-import_config = True
+import_config = False
 if import_config:
     import json
 
@@ -10,8 +10,8 @@ if import_config:
 else:
     config = {
         "rd_seed": 0,
-        "kf_cut": 0.6,
-        "tt_cut": 1e-5,
+        "kf_cut": 0,  # 0.6,
+        "tt_cut": 0,  # 1e-5,
         "tracks_number": 2,
         "single_run": {
             "do": True,
@@ -99,11 +99,11 @@ T4 # -------------------------- #   87   1739  BOTTOM
 '''
 # -- TRAGALDABAS V1 -- #  (T1, T3, T4)
 # mm. POSITION OF THE PLANES IN Z AXIS, MEASURED FROM GROUND TO TOP
-# VZ0 = np.array([1826, 924, 87])  # mm. REAL HEIGHTS
+VZ0 = np.array([1826, 924, 87])  # mm. REAL HEIGHTS
 
 # -- TRAGALDABAS V2 -- #  (T1, T2, T3, T4)
 # mm. POSITION OF THE PLANES IN Z AXIS, MEASURED FROM GROUND TO TOP
-VZ0 = np.array([1826, 1304, 924, 87])  # mm. REAL HEIGHTS
+# VZ0 = np.array([1826, 1304, 924, 87])  # mm. REAL HEIGHTS
 
 # mm. POSITION OF PLANES MEASURED FROM TOP TO BOTTOM
 VZ1 = VZ0[0] - VZ0  # mm. HEIGHTS MEASURED FROM TOP: [0, 522, 902, 1739]

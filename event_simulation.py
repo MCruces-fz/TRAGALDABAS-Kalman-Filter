@@ -32,8 +32,8 @@ class GenerateEvent:
         self.root_output = None
         self.mdet = None
 
-        self.hit_coords = np.zeros(NPLAN * NDAC)
-        self.hit_digits = np.zeros(NPLAN * NDAC)
+        self.hit_coords = np.zeros([0, NPLAN * NDAC])  # Hits in mm coordinates at index 1
+        self.hit_digits = np.zeros([0, NPLAN * NDAC])  # Hits in index coordinates at index 1
 
         self.gene_tracks()
 
@@ -141,11 +141,11 @@ class GenerateEvent:
                 v_dpt[it:it + NDAC] = vpnt[0:NDAC]
                 v_dat[it:it + NDAC] = vxyt[0:NDAC]
                 it += 3
-            self.hit_coords = np.vstack((self.hit_coords, v_dpt))
-            self.hit_digits = np.vstack((self.hit_digits, v_dat))
+            self.hit_coords = np.vstack((self.hit_coords, v_dpt))  # ( X, Y, T) impact point
+            self.hit_digits = np.vstack((self.hit_digits, v_dat))  # (kx,ky,kt) impact index
             nx += 1
-        self.hit_coords = np.delete(self.hit_coords, 0, axis=0)  # ( X, Y, T) impact point
-        self.hit_digits = np.delete(self.hit_digits, 0, axis=0)  # (kx,ky,kt) impact index
+        # self.hit_coords = np.delete(self.hit_coords, 0, axis=0)
+        # self.hit_digits = np.delete(self.hit_digits, 0, axis=0)
         # return self.hit_digits, self.hit_digits
 
     def set_root_output(self):
@@ -164,24 +164,26 @@ class GenerateEvent:
 
         trbnum, cell, col, row, x, y, z, time, charge = [np.array([], dtype=np.float32)] * 9
 
-        for rdat in self.hit_digits:
-            indices = np.array([0, 3, 6, 9])
-            coli = rdat[indices]
-            rowi = rdat[indices + 1]
+        # Indices for x, y and time values on self.hit_digits matrix (at index = 1):
+        x_ids = np.arange(NPLAN) * NDAC
+        y_ids = x_ids + 1
+        time_ids = x_ids + 2
+        for rdat in self.hit_digits:  # Data on each row -> 1D array on axis 1
+            coli = rdat[x_ids]  # Column indices
+            rowi = rdat[y_ids]  # Row indices
 
-            trbnum = np.hstack((trbnum, [0, 1, 2, 3]))
+            trbnum = np.hstack((trbnum, range(NPLAN)))
             col = np.hstack((col, coli))
             row = np.hstack((row, rowi))
             cell = np.hstack((cell, NCX * rowi + coli))
             x = np.hstack((x, (coli + 0.5) * WCX))
             y = np.hstack((y, (rowi + 0.5) * WCY))
             z = np.hstack((z, VZ0.copy()))
-            time = np.hstack((time, rdat[indices + 2]))
-            charge = np.hstack((charge, np.random.rand(4)))
+            time = np.hstack((time, rdat[time_ids]))
+            charge = np.hstack((charge, np.random.rand(NPLAN)))
 
         self.root_output = np.vstack((trbnum, cell, col, row, x, y, z, time, charge)).T
         np.random.shuffle(self.root_output)
-        # return root_inp
 
     def get_root_output(self, new_run: bool = False):
         if self.root_output is None or new_run:

@@ -19,7 +19,7 @@ from typing import Union
 from typing import List
 
 from const import *
-from utils import empty, diag_matrix, print_saetas, print_tables
+from utils import empty, diag_matrix, for_recursive, print_saetas, print_tables
 
 # ========================================================================== #
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #
@@ -44,6 +44,12 @@ if config["single_run"]["plot_representations"]:
 class TrackFitting:
 
     def __init__(self):
+        """
+        --- TrackFitting class ---
+
+        Fits tracks of hits on any TRASGO-like detector once they are found
+        by TrackFinding class
+        """
         self.saeta = None
         self.k_vector = None
 
@@ -101,6 +107,14 @@ class TrackFitting:
 
     @staticmethod
     def set_vstat(mG, mW, vdat, vg0):
+        """
+        Set state vector
+
+        :param mG:
+        :param mW:
+        :param vdat:
+        :param vg0:
+        """
         d_g0 = vdat - vg0
         va_out = np.dot(mG.T, np.dot(mW, d_g0))
         return va_out
@@ -108,12 +122,20 @@ class TrackFitting:
     def tim_track_fit(self, state_vec: Union[np.array, None] = None,
                       cells_path: Union[np.array, None] = None,
                       vstat_fcut: Union[np.array, None] = None):
+        """
+        Tim Track Fitting Method
+
+        :param state_vec: State vector (SAETA)
+        :param cells_path: Array with parameters of sorted hits
+        :param vstat_fcut: Complete array with SAETAs and cell paths.
+        """
 
         # Assign saeta and cells safely
         if state_vec is None and cells_path is None:
             if vstat_fcut is not None:
-                self.saeta = vstat_fcut[13:-1]
-                self.k_vector = vstat_fcut[:13]
+                k_dim = 1 + NDAC * NPLAN
+                self.saeta = vstat_fcut[k_dim:-1]
+                self.k_vector = vstat_fcut[:k_dim]
             else:
                 raise Exception("All input values undefined!")
         elif state_vec is not None and cells_path is not None:
@@ -168,15 +190,6 @@ class TrackFitting:
         return vsol, prob
 
 
-fit_debug = False
-if __name__ == "__main__" and fit_debug:
-    fitting = TrackFitting()
-    kvec = np.array([1, 1, 2, 1000, 1, 2, 3000, 1, 3, 4000, 2, 3, 7000])
-    saeta = np.array([123, 0.5, 213, 0.3, 1200, 3.333])
-    full_vec = np.array([1, 1, 2, 1000, 1, 2, 3000, 1, 3, 4000, 2, 3, 7000, 123, 0.5, 213, 0.3, 1200, 3.333, 0.2345])
-    print(fitting.tim_track_fit(vstat_fcut=full_vec))  # cells_path=kvec, state_vec=saeta))
-
-
 # ========================================================================== #
 # ============= K A L M A N   F I L T E R   F U N C T I O N S ============== #
 # ========================================================================== #
@@ -186,6 +199,38 @@ class TrackFinding:
     def __init__(self, root_inp: Union[np.array, None] = None,
                  mdet_inp: Union[np.array, None] = None,
                  fit_tracks: bool = False):
+        """
+        --- TrackFinding class ---
+
+        Finds tracks for hits on any TRASGO-like detector
+
+        :param root_inp: ROOT input with values
+            trbnum, cell, col, row, x, y, z, time, charge
+        :param mdet_inp: Input with our own format
+        :param fit_tracks: Check if use or not TrackFitting class by Tim Track method
+            after use TrackFitting class by Kalman Filter Method
+        """
+
+        # ------- Kalman Filter variables ------- #
+        self.r = np.zeros([NPLAN, NPAR])  # Vector (parameters); dimension -> Number of
+        # Planes x maximum hits x parameters
+        self.C = np.zeros([NPLAN, NPAR, NPAR])  # Error Matrices
+
+        self.rp = np.zeros(self.r.shape)  # Projected vector and matrices
+        self.Cp = np.zeros(self.C.shape)
+
+        self.rn = np.zeros(self.r.shape)  # UNUSED projected vectors with noises
+        self.Cn = np.zeros(self.C.shape)
+
+        self.C0 = diag_matrix(NPAR, [5 / WX, 50 * VSLP, 5 / WY, 50 * VSLP, 5 / WT, 10 * VSLN])  # Error matrix
+        self.V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
+
+        reco_dim = 1 + 3 * NPLAN + NPAR + 1  # Dimension (at axis 1) of reconstructed data matrix
+        self.m_stat = np.zeros([0, reco_dim])
+        self.mtrec = np.zeros([0, reco_dim])
+
+        self.lower_plane_id = NPLAN - 1
+        # --------------------------------------- #
 
         self.root_input = root_inp
 
@@ -202,8 +247,8 @@ class TrackFinding:
         """
         It sets the transport k_mat between both planes separated by dz
 
-        :param ks: sqrt( 1 + XP**2 + YP**2)
-        :param dz: distance between planes
+        :param ks: Slope -> sqrt( 1 + XP**2 + YP**2)
+        :param dz: Distance between planes
         :return: Transport function (k_mat | Numpy array)
         """
         F = diag_matrix(NPAR, [1] * NPAR)  # Identity 6x6
@@ -213,11 +258,27 @@ class TrackFinding:
         return F
 
     def transport_vector(self, vector: np.array, ks: float, dz: int) -> np.array:
+        """
+        Vector transporter among planes with transport function
+
+        :param vector: SAETA in current plane
+        :param ks: Slope -> sqrt(XP ** 2 + YP ** 2 + 1)
+        :param dz: Distance among planes to transport
+        :return: Transported vector at next plane
+        """
         trans_func = self.set_transport_func(ks, dz)
         transported_vector = np.dot(trans_func, vector)
         return transported_vector
 
     def transport_matrix(self, matrix: np.array, ks: float, dz: int) -> np.array:
+        """
+        Matrix transporter among planes with transport function
+
+        :param matrix: Error matrix in current plane
+        :param ks: Slope -> sqrt(XP ** 2 + YP ** 2 + 1)
+        :param dz: Distance among planes to transport
+        :return: Transported matrix at next plane
+        """
         trans_func = self.set_transport_func(ks, dz)
         transported_matrix = np.dot(trans_func, np.dot(matrix, trans_func.T))
         return transported_matrix
@@ -252,7 +313,6 @@ class TrackFinding:
         Columns:
         | Hits per plane | X [mm] | Y [mm] | Time [ps] |
 
-        :param m_det: Matrix with TRAGALDABAS output data
         :return: Matrix equivalent to m_det with positions in mm.
         """
         self.mdet_xy = np.copy(self.mdet)
@@ -263,24 +323,27 @@ class TrackFinding:
             self.mdet_xy[:, iX] = self.mdet_xy[:, iX] * WCX  # - (WCX / 2)  # X [mm]
             self.mdet_xy[:, iY] = self.mdet_xy[:, iY] * WCY  # - (WCY / 2)  # Y [mm]
 
-    def set_params(self, iplanN: int, iN: int):
+    def set_params(self, iplan_n: int, i_n: int):
         """
         It sets parameters of indexes of cells and positions respectively,
         taking data from mdet
-        :param iN: Integer which defines the data index.
-        :param iplanN: Integer which defines the plane index.
-        :return: Parameters kxN, kyN, ktN, x0, y0, t0 where N is the plane (TN).
+        :param iplan_n: Integer which defines the plane index.
+        :param i_n: Integer which defines the data index.
+        :return: Parameters kx_n, ky_n, kt_n, x0, y0, t0 where n is the plane (Tn).
         """
-        icel = 1 + iN * NDAC
-        kxN, kyN, ktN = self.mdet[iplanN, icel:icel + NDAC]
-        x0 = kxN * WCX  # - (WCX / 2)
-        y0 = kyN * WCY  # - (WCY / 2)
-        t0 = ktN
-        return kxN, kyN, ktN, x0, y0, t0
+        icel = 1 + i_n * NDAC
+        kx_n, ky_n, kt_n = self.mdet[iplan_n, icel:icel + NDAC]
+        x0 = kx_n * WCX  # - (WCX / 2)
+        y0 = ky_n * WCY  # - (WCY / 2)
+        t0 = kt_n
+        return kx_n, ky_n, kt_n, x0, y0, t0
 
     def m_coord(self, k, idn):
         """
         It sets the coordinates in mm of the hit to thew measurement vector
+
+        :param k: Plane index
+        :param idn: Hit index
         """
         if self.mdet_xy is None:
             self.set_mdet_xy()
@@ -289,10 +352,15 @@ class TrackFinding:
         coords = self.mdet_xy[k, ini:fin]
         return coords
 
-    def set_vstat(self, k: int, hits: list, plane_hits: int, r):
+    def set_vstat(self, k: int, hits: list, plane_hits: int, saeta):
         """
         It sets the array:
         [ Nbr. hits, 0, 0, 0, ..., kx1, ky1, kt1, X0, XP, Y0, YP, T0, S0 ]
+
+        :param k: Plane index
+        :param hits: list with hits indices
+        :param plane_hits: Number of followed hits
+        :param saeta: State vector (SAETA)
         """
         idx = [[ix, hit] for ix, hit in enumerate(hits)]
         k_list = []
@@ -303,13 +371,18 @@ class TrackFinding:
         k_vec = np.zeros(NDAC * NPLAN)
         # k_vec[:len(k_list)] = k_list
         k_vec[-len(k_list):] = k_list
-        vstat = np.hstack([plane_hits, k_vec, r[k]])
+        vstat = np.hstack([plane_hits, k_vec, saeta[k]])
         return vstat
 
     @staticmethod
     def fcut(vstat, vm, vr, s2_prev):
         """
         Function that returns quality factor by the first method
+
+        :param vstat: Complete state vector with hits information
+        :param vm: Measured point with parameters.
+        :param vr: State vector (SAETA)
+        :param s2_prev: previous Chi2 value
         """
         bm = 0.2  # beta min
         cmn = bm * VC
@@ -362,8 +435,14 @@ class TrackFinding:
         Saeta2Planes calculates a saeta between 2 planes. A simple non-linear model used.
         Used to fill an non-zero input saeta.
 
-        :param xi: To
-        :param xj: From
+        :param xi: Next x coordinate
+        :param yi: Next y coordinate
+        :param timei: Next time coordinate
+        :param zi: Next z coordinate
+        :param xj: current x coordinate
+        :param yj: Current y coordinate
+        :param timej: Current time coordinate
+        :param zj: Current z coordinate
         :return: The output saeta has the form (X0,X',Y0,Y',T0,S)
         """
         S2 = np.zeros([6])
@@ -378,182 +457,158 @@ class TrackFinding:
 
     def root2mdet(self) -> np.array:
         """
-        Change root format to our mdet format
+        Change the event matrix in root format to our 'mdet format'
 
-        :return: array with mdet format
+        :return: array with our 'mdet format'
         """
         if self.root_input is None:
             return 0
 
         # Fill mdet with hit values
-        mdet = empty([NPLAN])
+        self.mdet = empty([NPLAN])
         for trbnum, cell, col, row, x, y, z, time, charge in self.root_input:
-            mdet[int(trbnum)].extend([col, row, time])
+            self.mdet[int(trbnum)].extend([col, row, time])
 
         # Add number of hits on each plane at the beginning of each line
-        mdet = [[len(plane) / NDAC] + plane for plane in mdet]
+        self.mdet = [[len(plane) / NDAC] + plane for plane in self.mdet]
 
-        num_hits = [plane[0] for plane in mdet]  # List of hits in each plane
+        num_hits = [plane[0] for plane in self.mdet]  # List of hits in each plane
         max_hits = max(num_hits)  # Max number of hits in one plane
 
-        mdet = [plane + [0] * int(max_hits - plane[0]) * NDAC for plane in mdet]
-        mdet = np.asarray(mdet)
-        return mdet
+        self.mdet = [plane + [0] * int(max_hits - plane[0]) * NDAC for plane in self.mdet]
+        self.mdet = np.asarray(self.mdet)
+
+    def get_mdet(self):
+        """
+        Getter for event matrix
+
+        :return: Matrix with the parameters of the unreconstructed event
+        """
+        if self.mdet is None:
+            self.root2mdet()
+        return self.mdet
 
     def find_tracks(self):
+        """
+        Applies the best method for do the reconstruction
+
+        :return: Void function.
+        """
         if self.root_input is not None and self.mdet is None:
-            self.mdet = self.root2mdet()
+            self.root2mdet()
         elif self.mdet is not None:
             pass
         else:
             raise Exception("Something went wrong choosing track-finding method ->"
                             "TrackFinding only needs mdet_inp OR root_inp")
 
-        return self.kalman_filter()
+        range_list = [range(n) for n in self.mdet[:, 0].astype(np.int)]  # Nr. of hits in each plane
 
-    def kalman_filter(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
-        """
-        Main Finding Function using Kalman Filter Algorithm
+        for_recursive(range_list,
+                      self.kalman_filter)
 
-        :param mdet: Matrix with columns: (nhits, kx, ky, time)
-        :param dcut:
-        :param tcut:
-        :return:
-            - mstat: Hello
-            - reco_saetas: World!
-        """
-        r = np.zeros([NPLAN, NPAR])  # Vector (parameters); dimension -> Number of
-        # Planes x maximum hits x parameters
-        C = np.zeros([NPLAN, NPAR, NPAR])  # Error Matrices
-
-        rp = np.zeros(r.shape)  # Projected vector and matrices
-        Cp = np.zeros(C.shape)
-
-        rn = np.zeros(r.shape)  # UNUSED projected vectors with noises
-        Cn = np.zeros(C.shape)
-
-        C0 = diag_matrix(NPAR, [5 / WX, 50 * VSLP, 5 / WY, 50 * VSLP, 5 / WT, 10 * VSLN])  # Error k_mat
-        # C0 = diag_matrix(NPAR, [1 / WX, VSLP, 1 / WY, VSLP, 1 / WT, VSLN])  # Error k_mat
-        V = diag_matrix(NDAC, [SIGX ** 2, SIGY ** 2, SIGT ** 2])
-        # Chi2 = 0
-        m_stat = np.zeros([0, 20])
-        mtrec = np.zeros([0, 20])
-
-        # iplan1, iplan2, iplan3, iplan4 = 0, 1, 2, 3  # Index for planes T1, T2, T3, T4 respectively
-        lower_plane_id = NPLAN - 1
-        ncel1, ncel2, ncel3, ncel4 = self.mdet[:, 0].astype(np.int)  # Nr. of hits in each plane
-
-        # ================== MAIN LOOP ================= #
-
-        # iN is the index of the hit in the plane N
-        for i4 in range(ncel4):
-            for i3 in range(ncel3):
-                for i2 in range(ncel2):
-                    for i1 in range(ncel1):
-                        s2 = 0
-                        hits = [i1, i2, i3, i4]  # Combination of chosen hit indices
-
-                        # Step 1. - INITIALIZATION
-                        kx4, ky4, kt4, x0, y0, t0 = self.set_params(lower_plane_id, i4)
-                        r0 = [x0, 0, y0, 0, t0, SC]  # Hypothesis
-                        r[lower_plane_id] = r0
-                        C[lower_plane_id] = C0
-                        plane_hits = 1
-
-                        # k: index of plane and zk: height of plane k in mm
-                        for k, zk in list(enumerate(VZ1))[::-1][1:]:  # Iterates over [[2, 924], [1, 1304], [0, 1826]]
-                            s2_prev = s2 + 0
-                            # Step 2. - PREDICTION
-                            zi = VZ1[k + 1]  # Lower plane, higher index
-                            zf = VZ1[k]  # This plane
-                            dz = zf - zi  # dz < 0; It goes up, against Z axis
-                            hiti = hits[k + 1]  # hit index in lower plane
-                            hitf = hits[k]  # hit index in upper plane
-
-                            _, xp, _, yp, _, _ = r[k + 1]
-                            ks = np.sqrt(1 + xp ** 2 + yp ** 2)
-
-                            # F = set_transport_func(ks, dz)
-                            # rp[k] = np.dot(F, r[k + 1])
-                            # Cp[k] = np.dot(F, np.dot(C[k + 1], F.T))
-
-                            rp[k] = self.transport_vector(r[k + 1], ks, dz)
-                            Cp[k] = self.transport_matrix(C[k + 1], ks, dz)
-
-                            # Step 3. - PROCESS NOISE  [UNUSED YET]
-                            rn[k] = rp[k]
-                            Cn[k] = Cp[k]  # + Q (random k_mat)
-
-                            # Step 4. - FILTRATION
-                            m = self.m_coord(k, hitf)  # Measurement
-
-                            H = self.set_jacobi()
-
-                            # Matrix K gain
-                            K, weights = self.set_mKgain(H, Cn[k], V)
-                            # weights = diag_matrix(NDAC, [SIGX, SIGY, SIGT])
-
-                            # New rk vector
-                            mr = np.dot(H, rn[k])
-                            delta_m = m - mr
-                            delta_r = np.dot(K, delta_m)
-                            r[k] = rn[k] + delta_r
-
-                            # New Ck k_mat
-                            C[k] = Cn[k] - np.dot(K, np.dot(H, Cn[k]))
-
-                            plane_hits += 1
-                            vstat = self.set_vstat(k, hits, plane_hits, r)
-                            cutf, s2 = self.fcut(vstat, m, r[k], s2_prev)
-                            vstat_cutf = np.hstack([vstat, cutf])
-                            # print(f"vstat = {vstat_cutf}, dcut ({dcut})")
-                            if cutf > dcut and k != 0:
-                                continue  # Continues going up in planes
-                            else:
-                                if vstat_cutf[-1] > dcut:
-                                    m_stat = np.vstack((m_stat, vstat_cutf))
-
-                                    # Tim Track Analysis (Track Fitting)
-                                    if self.fit_tracks is not None:
-                                        vs, prob = self.fit_tracks.tim_track_fit(vstat_fcut=vstat_cutf)
-                                        if prob > tcut:
-                                            k_vector = vstat_cutf[0:13]
-                                            v_stat_tt = np.hstack((k_vector, vs, prob))
-                                            mtrec = np.vstack((mtrec, v_stat_tt))
-                                break  # It takes another hit configuration and saves vstat in all_reco_saetas
         if self.fit_tracks is not None:
             to_delete = []
-            for i in range(len(mtrec)):
-                for j in range(i + 1, len(mtrec)):
-                    if np.all(mtrec[i, 1:4] == mtrec[j, 1:4]):
-                        if mtrec[i, -1] > mtrec[j, -1]:
+            for i in range(len(self.mtrec)):
+                for j in range(i + 1, len(self.mtrec)):
+                    if np.all(self.mtrec[i, 1:4] == self.mtrec[j, 1:4]):
+                        if self.mtrec[i, -1] > self.mtrec[j, -1]:
                             # print(f"Deleted index {j} because {reco_saetas[j, -1]:.4f} < {reco_saetas[i, -1]:.4f}")
                             to_delete.append(j)
                         else:
                             # print(f"Deleted index {i} because {reco_saetas[i, -1]:.4f} < {reco_saetas[j, -1]:.4f}")
                             to_delete.append(i)
-            m_stat = np.delete(mtrec, to_delete, axis=0)
-        return m_stat
+            self.m_stat = np.delete(self.mtrec, to_delete, axis=0)
 
-    def tragaldabas_kf_3_planes(self, dcut=config["kf_cut"], tcut=config["tt_cut"]):
-        return "No Array!!"
+    def get_reconstructed_saetas(self):
+        """
+        Getter for reconstructed SAETAs
 
+        :return: Final reconstructed saetas.
+        """
+        if np.all(self.m_stat == 0):
+            self.find_tracks()
+        return self.m_stat
 
-find_debug = False
-if __name__ == "__main__" and find_debug:
-    from event_simulation import GenerateEvent
+    def kalman_filter(self, hits, dcut=config["kf_cut"], tcut=config["tt_cut"]):
+        """
+        Applies Kalman Filter method for a combination of given hits
 
-    event = GenerateEvent()
+        :param hits: Combination of chosen hit indices
+        :param dcut:
+        :param tcut:
+        """
+        s2 = 0
 
-    root_output = event.get_root_output()
+        # Step 1. - INITIALIZATION
+        _, _, _, x0, y0, t0 = self.set_params(self.lower_plane_id, hits[-1])
+        r0 = [x0, 0, y0, 0, t0, SC]  # Hypothesis
+        self.r[self.lower_plane_id] = r0
+        self.C[self.lower_plane_id] = self.C0
+        plane_hits = 1
 
-    mdet_output = event.get_mdet_output()
+        # k: index of plane and zk: height of plane k in mm
+        for k, zk in list(enumerate(VZ1))[::-1][1:]:  # Iterates over [[2, 924], [1, 1304], [0, 1826]]
+            s2_prev = s2 + 0
+            # Step 2. - PREDICTION
+            zi = VZ1[k + 1]  # Lower plane, higher index
+            zf = VZ1[k]  # This plane
+            dz = zf - zi  # dz < 0; It goes up, against Z axis
+            hiti = hits[k + 1]  # hit index in lower plane
+            hitf = hits[k]  # hit index in upper plane
 
-    gened_trks = event.generated_tracks
-    print(gened_trks)
+            _, xp, _, yp, _, _ = self.r[k + 1]
+            ks = np.sqrt(1 + xp ** 2 + yp ** 2)
 
-    kalman_filter = TrackFinding(mdet_inp=mdet_output)
-    m_stat, m_trec = kalman_filter.kalman_filter()
+            # F = set_transport_func(ks, dz)
+            # rp[k] = np.dot(F, r[k + 1])
+            # Cp[k] = np.dot(F, np.dot(C[k + 1], F.T))
+
+            self.rp[k] = self.transport_vector(self.r[k + 1], ks, dz)
+            self.Cp[k] = self.transport_matrix(self.C[k + 1], ks, dz)
+
+            # Step 3. - PROCESS NOISE  [UNUSED YET]
+            self.rn[k] = self.rp[k]
+            self.Cn[k] = self.Cp[k]  # + Q (random k_mat)
+
+            # Step 4. - FILTRATION
+            m = self.m_coord(k, hitf)  # Measurement
+
+            H = self.set_jacobi()
+
+            # Matrix K gain
+            K, weights = self.set_mKgain(H, self.Cn[k], self.V)
+            # weights = diag_matrix(NDAC, [SIGX, SIGY, SIGT])
+
+            # New rk vector
+            mr = np.dot(H, self.rn[k])
+            delta_m = m - mr
+            delta_r = np.dot(K, delta_m)
+            self.r[k] = self.rn[k] + delta_r
+
+            # New Ck k_mat
+            self.C[k] = self.Cn[k] - np.dot(K, np.dot(H, self.Cn[k]))
+
+            plane_hits += 1
+            vstat = self.set_vstat(k, hits, plane_hits, self.r)
+            cutf, s2 = self.fcut(vstat, m, self.r[k], s2_prev)
+            vstat_cutf = np.hstack([vstat, cutf])
+
+            if cutf > dcut and k != 0:
+                continue  # Continues going up in planes
+            else:
+                if vstat_cutf[-1] > dcut:
+                    self.m_stat = np.vstack((self.m_stat, vstat_cutf))
+
+                    # Tim Track Analysis (Track Fitting)
+                    if self.fit_tracks is not None:
+                        vs, prob = self.fit_tracks.tim_track_fit(vstat_fcut=vstat_cutf)
+                        if prob > tcut:
+                            k_dim = 1 + NDAC * NPLAN
+                            k_vector = vstat_cutf[:k_dim]
+                            v_stat_tt = np.hstack((k_vector, vs, prob))
+                            self.mtrec = np.vstack((self.mtrec, v_stat_tt))
+                break  # It takes another hit configuration and saves vstat in all_reco_saetas
 
 # TODO: Lluvias a distintas alturas (Preguntar a Hans)
 

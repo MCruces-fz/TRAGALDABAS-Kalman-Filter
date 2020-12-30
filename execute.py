@@ -13,20 +13,19 @@ sim_evt = GenerateEvent()
 # get_evt = RootUnpacker()
 
 root_output = sim_evt.get_root_output()
-# FIXME: Reconstrucción para 3 planos!!!!
 # root_out = get_evt.get_root_out()
 
 track_finding = TrackFinding(
     root_inp=root_output,
     # mdet_inp=sim_evt.get_mdet_output(),
-    fit_tracks=False
+    fit_tracks=True
 )
 
-mdet = track_finding.mdet
-reco_saetas = track_finding.find_tracks()
+mdet = track_finding.get_mdet()
+reco_saetas = track_finding.get_reconstructed_saetas()
 
 print_saetas(sim_evt.generated_tracks)
-print_saetas(reco_saetas[:, 13:-1])
+k_dim = 1 + NDAC * NPLAN
+print_saetas(reco_saetas[:, k_dim:-1])
 
-# TODO: Crear una class Event.
-#  - class Track que herede class Event
+# FIXME: Cambiar el origen de coordenada en cada plano (al centro)

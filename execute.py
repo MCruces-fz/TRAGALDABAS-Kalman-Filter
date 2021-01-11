@@ -1,9 +1,7 @@
-from const import *  # <- config is imported here
+from config.const import *  # <- config is imported here
 
-from root_unpacker import RootUnpacker
-from utils import print_saetas
-from event_simulation import GenerateEvent
-from tracks_reconstruction import TrackFinding
+from modules.root_unpacker import RootUnpacker
+from modules.tracks_reconstruction import TrackFinding
 
 # Randomize if rd_seed is an integer seed
 if config["rd_seed"] is not None:
@@ -13,26 +11,29 @@ if config["rd_seed"] is not None:
 # mdet_out = sim_evt.get_mdet_output()
 # root_out = sim_evt.get_root_output()
 
-get_evt = RootUnpacker()
-root_output = get_evt.get_root_out()
+get_evts = RootUnpacker()
+evt_output = get_evts.get_root_out(out_format="tragaldabas")
 
 evt_id = 0
-for output in root_output:
+for output in evt_output:
     print(f'@@@ ===== Event: {evt_id} ===== @@@')
+    evt_id += 1
+
     track_finding = TrackFinding(
-        # mdet_inp=mdet_out,
-        root_inp=output,
+        mdet_inp=output,
+        # root_inp=output,
         fit_tracks=False
     )
 
     mdet = track_finding.get_mdet()
-    reco_saetas = track_finding.get_reconstructed_saetas()
-
     print(f"Detector:\n{mdet}")
-    print("\nReconstructed SAETAs:")
+
+    # reco_saetas = track_finding.get_reconstructed_saetas()
+    #
+    # print("\nReconstructed SAETAs:")
 
     # print_saetas(sim_evt.generated_tracks)
-    k_dim = 1 + NDAC * NPLAN
-    print_saetas(reco_saetas[:, k_dim:-1])
+    # k_dim = 1 + NDAC * NPLAN
+    # print_saetas(reco_saetas[:, k_dim:-1])
 
 # FIXME: Cambiar el origen de coordenada en cada plano (al centro)

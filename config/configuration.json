@@ -1,5 +1,6 @@
 {
     "rd_seed": 0,
+    "vz0": [1826, 1304, 924, 87],
     "kf_cut": 0.6,
     "tt_cut": 1e-5,
     "tracks_number": 2,

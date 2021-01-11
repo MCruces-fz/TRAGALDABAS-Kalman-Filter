@@ -1,4 +1,4 @@
-from const import *
+from config.const import *
 
 
 class GenerateEvent:
@@ -218,7 +218,7 @@ class GenerateEvent:
                     self.mdet[ip, 0] += 1
                 idet += NDAC
             idat += NDAC
-        # return mdet
+        # return tragas_out
 
     def get_mdet_output(self, new_run: bool = False):
         if self.mdet is None or new_run:

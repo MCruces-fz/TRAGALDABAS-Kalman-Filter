@@ -1,4 +1,4 @@
-from const import *
+from config.const import *
 import copy
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle

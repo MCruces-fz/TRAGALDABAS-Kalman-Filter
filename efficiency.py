@@ -1,7 +1,8 @@
-from tracks_reconstruction import GenerateEvent, TrackFinding
+from modules.tracks_reconstruction import TrackFinding
+from modules.event_simulation import GenerateEvent
 import time
 import matplotlib.pyplot as plt
-from const import *
+from config.const import *
 
 # ========================================================================== #
 # ========================== E F F I C I E N C Y =========================== #
@@ -57,7 +58,7 @@ plt.matshow(all_bins)
 if config["efficiency"]["plots"]:
     plt.show()
 if config["efficiency"]["save_txt"]:
-    np.savetxt(f"all_bins_{nb_tracks}_tracks.txt", all_bins)
+    np.savetxt(f"outputs/all_bins_{nb_tracks}_tracks.txt", all_bins)
 
 else:
     if config['single_run']['do'] == config['efficiency']['do']:

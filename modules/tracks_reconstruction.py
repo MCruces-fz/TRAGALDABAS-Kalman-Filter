@@ -16,10 +16,8 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from typing import Union
 
-from typing import List
-
-from const import *
-from utils import empty, diag_matrix, for_recursive, print_saetas, print_tables
+from config.const import *
+from modules.utils import empty, diag_matrix, for_recursive
 
 # ========================================================================== #
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #
@@ -307,8 +305,8 @@ class TrackFinding:
 
     def set_mdet_xy(self):
         """
-        It Calculates the mdet equivalent in mm, in spite of in indices.
-        mdet with x & y in mm
+        It Calculates the tragas_out equivalent in mm, in spite of in indices.
+        tragas_out with x & y in mm
 
         Columns:
         | Hits per plane | X [mm] | Y [mm] | Time [ps] |
@@ -326,7 +324,7 @@ class TrackFinding:
     def set_params(self, iplan_n: int, i_n: int):
         """
         It sets parameters of indexes of cells and positions respectively,
-        taking data from mdet
+        taking data from tragas_out
         :param iplan_n: Integer which defines the plane index.
         :param i_n: Integer which defines the data index.
         :return: Parameters kx_n, ky_n, kt_n, x0, y0, t0 where n is the plane (Tn).
@@ -457,17 +455,18 @@ class TrackFinding:
 
     def root2mdet(self) -> np.array:
         """
-        Change the event matrix in root format to our 'mdet format'
+        Change the event matrix in root format to our 'tragas_out format'
 
-        :return: array with our 'mdet format'
+        :return: array with our 'tragas_out format'
         """
         if self.root_input is None:
             return 0
 
-        # Fill mdet with hit values
+        # Fill tragas_out with hit values
         self.mdet = empty([NPLAN])
         for trbnum, cell, col, row, x, y, z, time, charge in self.root_input:
             self.mdet[int(trbnum)].extend([col, row, time])
+            # TODO: Cambiar orden de los planos según Z
 
         # Add number of hits on each plane at the beginning of each line
         self.mdet = [[len(plane) / NDAC] + plane for plane in self.mdet]

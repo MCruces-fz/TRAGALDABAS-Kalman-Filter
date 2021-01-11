@@ -2,6 +2,8 @@ import ROOT
 import numpy as np
 from os.path import join as join_path
 import time as tm_count
+from modules.utils import empty
+from config.const import *
 
 start_time = tm_count.perf_counter()
 
@@ -17,11 +19,12 @@ class RootUnpacker:
 
         self.show_prints = False
 
+        self.tragas_out = None
         self.root_out = None
 
     def set_root_out(self):
 
-        input_file_path = join_path(self.DST_DIR, "tr17289091625.hld.root.root")
+        input_file_path = join_path(self.DST_DIR, "tr18249041152.hld.root.root")
 
         # Open trFILE.hld.root.root as TFile
         f = ROOT.TFile(input_file_path, "READ")
@@ -86,10 +89,56 @@ class RootUnpacker:
                     print(f'fCharge: {charge:.3f}')
             self.root_out.append(root_evt)
 
-    def get_root_out(self):
+    def root2tragas(self) -> np.array:
+        """
+        Change the event matrix in root format to our 'tragas_out format'
+
+        :return: array with our 'tragas_out format'
+        """
         if self.root_out is None:
             self.set_root_out()
-        return self.root_out
+
+        self.tragas_out = []
+        for evt_id in range(len(self.root_out)):
+            # Fill tragas_out with hit values
+            tragas_evt = empty([NPLAN])
+            print("output", self.root_out)
+            print("Number of planes: ", NPLAN)
+            for trbnum, cell, col, row, x, y, z, time, charge in self.root_out[evt_id]:
+                try:
+                    plane_id = np.where(VZ0 == z)[0][0]
+                    tragas_evt[plane_id].extend([col, row, time])
+                except IndexError:
+                    print("Error choosing array index in root2tragas() on root_unpacker.py")
+    
+            # Add number of hits on each plane at the beginning of each line
+            tragas_evt = [[len(plane) / NDAC] + plane for plane in tragas_evt]
+    
+            num_hits = [plane[0] for plane in tragas_evt]  # List of hits in each plane
+            max_hits = max(num_hits)  # Max number of hits in one plane
+    
+            tragas_evt = [plane + [0] * int(max_hits - plane[0]) * NDAC for plane in tragas_evt]
+            tragas_evt = np.asarray(tragas_evt)
+            self.tragas_out.append(tragas_evt)
+
+    def get_root_out(self, out_format="raw"):
+        """
+        Returns the output with the desired format
+
+        :param out_format: (optional) Format of the output. Choose one:
+            {
+                "raw": [trbnum, cell, col, row, x, y, z, time, charge],
+                "tragaldabas": [number_of_hits, cell, col, time]
+            }
+        """
+        if out_format == "raw":
+            if self.root_out is None:
+                self.set_root_out()
+            return self.root_out
+        elif out_format == "tragaldabas":
+            if self.tragas_out is None:
+                self.root2tragas()
+            return self.tragas_out
 
 
 root_unpacker = RootUnpacker()

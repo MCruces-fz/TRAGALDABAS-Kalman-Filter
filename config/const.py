@@ -4,8 +4,8 @@ import_config = False
 if import_config:
     import json
 
-    # Read Configurations from config.json
-    with open("config.json", "r") as config_file:
+    # Read Configurations from configuration.json
+    with open("configuration.json", "r") as config_file:
         config = json.load(config_file)
 else:
     config = {

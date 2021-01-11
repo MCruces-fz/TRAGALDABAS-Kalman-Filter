@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 
-from event_simulation import GenerateEvent
+from modules.event_simulation import GenerateEvent
 from utils import Represent3D
 from tracks_reconstruction import TrackFinding
 
-from const import *
+from config.const import *
 
 # ========================================================================== #
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #
@@ -50,7 +50,7 @@ mdat = single_event.hit_digits
 # ================== ANALYSIS ================== #
 kalman_filter = TrackFinding(mdet_inp=mdet)
 
-m_stat, mtrec = kalman_filter.kalman_filter()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+m_stat, mtrec = kalman_filter.kalman_filter()  # tragas_out, dcut=config['kf_cut'], tcut=config['tt_cut'])
 mdet_xy = kalman_filter.mdet_xy
 
 saeta_kf = m_stat[:, 13:-1]
@@ -116,13 +116,13 @@ if __name__ == "__main__":
 
         # # ================ DIGITIZATION ================ #
 
-        mdet = sim_evt.get_mdet_output()
+        tragas_out = sim_evt.get_mdet_output()
         mdat = sim_evt.hit_digits
 
         # ================== ANALYSIS ================== #
-        track_finding = TrackFinding(mdet_inp=mdet)
+        track_finding = TrackFinding(mdet_inp=tragas_out)
 
-        all_reco_saetas, reco_saetas = track_finding.kalman_filter()  # mdet, dcut=config['kf_cut'], tcut=config['tt_cut'])
+        all_reco_saetas, reco_saetas = track_finding.kalman_filter()  # tragas_out, dcut=config['kf_cut'], tcut=config['tt_cut'])
         mdet_xy = track_finding.mdet_xy
 
         saeta_kf = all_reco_saetas[:, 13:-1]
@@ -199,9 +199,9 @@ if __name__ == "__main__":
 
                 sim_evt.gene_tracks()
 
-                mdet = sim_evt.get_mdet_output()
+                tragas_out = sim_evt.get_mdet_output()
 
-                track_finding = TrackFinding(mdet_inp=mdet)
+                track_finding = TrackFinding(mdet_inp=tragas_out)
 
                 all_reco_saetas, reco_saetas = track_finding.kalman_filter()
 

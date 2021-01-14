@@ -9,7 +9,7 @@ if import_config:
         config = json.load(config_file)
 else:
     config = {
-        "rd_seed": 0,
+        "if_seed": 0,
         "kf_cut": 0,  # 0.6,
         "tt_cut": 0,  # 1e-5,
         "tracks_number": 2,

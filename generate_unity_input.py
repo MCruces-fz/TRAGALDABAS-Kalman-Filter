@@ -1,6 +1,7 @@
 from modules.event_simulation import GenerateEvent
 from config.const import *
 import numpy as np
+import os
 
 # ============== TRACKS GENERATION ============= #
 sim_evt = GenerateEvent(in_track=50)
@@ -21,7 +22,9 @@ def to_unity_input(saeta: np.array) -> str:
     return line
 
 
-with open("outputs/unity_input_01.dat", "w+") as out_file:
+if not os.path.exists("./outputs/"):
+    os.mkdir("./outputs/")
+with open("outputs/unity_input_02.dat", "w+") as out_file:
     for ix, saeta in enumerate(gene_track):
         line = to_unity_input(saeta)
         out_file.write(line)

@@ -3,15 +3,15 @@ from config.const import *  # <- config is imported here
 from modules.root_unpacker import RootUnpacker
 from modules.tracks_reconstruction import TrackFinding
 
-# Randomize if rd_seed is an integer seed
-if config["rd_seed"] is not None:
-    np.random.seed(config["rd_seed"])
+# Randomize if if_seed is an integer seed
+if config["if_seed"] is not None:
+    np.random.seed(config["if_seed"])
 
 # sim_evt = GenerateEvent()
 # mdet_out = sim_evt.get_mdet_output()
 # root_out = sim_evt.get_root_output()
 
-get_evts = RootUnpacker()
+get_evts = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial", show_prints=False)
 evt_output = get_evts.get_root_out(out_format="tragaldabas")
 
 evt_id = 0

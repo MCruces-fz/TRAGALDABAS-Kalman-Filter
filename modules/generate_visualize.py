@@ -29,9 +29,9 @@ np.set_printoptions(formatter={'float': '{:.3f}'.format})
 if config["single_run"]["plot_representations"]:
     plt.close("all")
 
-# Randomize if rd_seed is an integer seed
-if config["rd_seed"] is not None:
-    np.random.seed(config["rd_seed"])
+# Randomize if if_seed is an integer seed
+if config["if_seed"] is not None:
+    np.random.seed(config["if_seed"])
 
 # ========================================================================== #
 # ====================== G E N E - D I G I T - A N A ======================= #

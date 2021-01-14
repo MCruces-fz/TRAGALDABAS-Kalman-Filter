@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from typing import Union
 
 from config.const import *
-from modules.utils import empty, diag_matrix, for_recursive
+from modules.utils import diag_matrix, for_recursive
 
 # ========================================================================== #
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #
@@ -26,11 +26,11 @@ from modules.utils import empty, diag_matrix, for_recursive
 
 np.set_printoptions(formatter={'float': '{:.3f}'.format})
 
-# Randomize if rd_seed is an integer seed
-if config["rd_seed"] is not None:
-    np.random.seed(config["rd_seed"])
+# Randomize if if_seed is an integer seed
+if config["random_seed"] is not None:
+    np.random.seed(config["random_seed"])
 
-if config["single_run"]["plot_representations"]:
+if config["show_plots"]:
     plt.close("all")
 
 
@@ -229,8 +229,6 @@ class TrackFinding:
 
         self.lower_plane_id = NPLAN - 1
         # --------------------------------------- #
-
-        self.root_input = root_inp
 
         self.mdet = mdet_inp
         self.mdet_xy = None
@@ -453,38 +451,12 @@ class TrackFinding:
         S2[5] = (timei - timej) / dz
         return S2
 
-    def root2mdet(self) -> np.array:
-        """
-        Change the event matrix in root format to our 'tragas_out format'
-
-        :return: array with our 'tragas_out format'
-        """
-        if self.root_input is None:
-            return 0
-
-        # Fill tragas_out with hit values
-        self.mdet = empty([NPLAN])
-        for trbnum, cell, col, row, x, y, z, time, charge in self.root_input:
-            self.mdet[int(trbnum)].extend([col, row, time])
-            # TODO: Cambiar orden de los planos según Z
-
-        # Add number of hits on each plane at the beginning of each line
-        self.mdet = [[len(plane) / NDAC] + plane for plane in self.mdet]
-
-        num_hits = [plane[0] for plane in self.mdet]  # List of hits in each plane
-        max_hits = max(num_hits)  # Max number of hits in one plane
-
-        self.mdet = [plane + [0] * int(max_hits - plane[0]) * NDAC for plane in self.mdet]
-        self.mdet = np.asarray(self.mdet)
-
     def get_mdet(self):
         """
         Getter for event matrix
 
         :return: Matrix with the parameters of the unreconstructed event
         """
-        if self.mdet is None:
-            self.root2mdet()
         return self.mdet
 
     def find_tracks(self):
@@ -493,11 +465,7 @@ class TrackFinding:
 
         :return: Void function.
         """
-        if self.root_input is not None and self.mdet is None:
-            self.root2mdet()
-        elif self.mdet is not None:
-            pass
-        else:
+        if self.mdet is None:
             raise Exception("Something went wrong choosing track-finding method ->"
                             "TrackFinding only needs mdet_inp OR root_inp")
 
@@ -512,10 +480,8 @@ class TrackFinding:
                 for j in range(i + 1, len(self.mtrec)):
                     if np.all(self.mtrec[i, 1:4] == self.mtrec[j, 1:4]):
                         if self.mtrec[i, -1] > self.mtrec[j, -1]:
-                            # print(f"Deleted index {j} because {reco_saetas[j, -1]:.4f} < {reco_saetas[i, -1]:.4f}")
                             to_delete.append(j)
                         else:
-                            # print(f"Deleted index {i} because {reco_saetas[i, -1]:.4f} < {reco_saetas[j, -1]:.4f}")
                             to_delete.append(i)
             self.m_stat = np.delete(self.mtrec, to_delete, axis=0)
 
@@ -608,9 +574,3 @@ class TrackFinding:
                             v_stat_tt = np.hstack((k_vector, vs, prob))
                             self.mtrec = np.vstack((self.mtrec, v_stat_tt))
                 break  # It takes another hit configuration and saves vstat in all_reco_saetas
-
-# TODO: Lluvias a distintas alturas (Preguntar a Hans)
-
-# TODO: Create different branches:
-#  - (kf_lineal) Kalman Filter Lineal
-#  - (master) Kalman Filter Classes

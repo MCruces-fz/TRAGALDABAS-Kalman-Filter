@@ -3,6 +3,7 @@ from modules.event_simulation import GenerateEvent
 import time
 import matplotlib.pyplot as plt
 from config.const import *
+import os
 
 # ========================================================================== #
 # ========================== E F F I C I E N C Y =========================== #
@@ -58,6 +59,8 @@ plt.matshow(all_bins)
 if config["efficiency"]["plots"]:
     plt.show()
 if config["efficiency"]["save_txt"]:
+    if not os.path.exists("./outputs/"):
+        os.mkdir("./outputs/")
     np.savetxt(f"outputs/all_bins_{nb_tracks}_tracks.txt", all_bins)
 
 else:

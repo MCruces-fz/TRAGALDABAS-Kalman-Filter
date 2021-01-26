@@ -4,6 +4,23 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 import mpl_toolkits.mplot3d.art3d as art3d
 from typing import Union
+import functools
+import time
+
+
+def timer(func):
+    """Print the runtime of the decorated function"""
+
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        start_time = time.perf_counter()  # 1
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()  # 2
+        run_time = end_time - start_time  # 3
+        print(f"CPU time running {func.__name__!r}: {run_time:.4f} secs")
+        return value
+
+    return wrapper_timer
 
 
 def for_recursive(range_list, execute_function, current_index=0, iter_list=None):
@@ -27,6 +44,7 @@ for_debug = True
 if __name__ == "__main__" and for_debug:
     def do_whatever(index_list):
         return print(index_list)
+
 
     for_recursive(range_list=[range(2), range(2)], execute_function=do_whatever)
 

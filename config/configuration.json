@@ -7,7 +7,7 @@
     ],
     "kf_cut": 0.6,
     "tt_cut": 1e-05,
-    "tracks_number": 2,
+    "tracks_number": 3,
     "show_prints": false,
     "show_plots": false
 }

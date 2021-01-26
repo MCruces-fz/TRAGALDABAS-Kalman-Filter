@@ -11,7 +11,8 @@ if config["if_seed"] is not None:
 # mdet_out = sim_evt.get_mdet_output()
 # root_out = sim_evt.get_root_output()
 
-get_evts = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial", show_prints=False)
+get_evts = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial",
+                        show_prints=False, data_range=10)
 evt_output = get_evts.get_root_out(out_format="tragaldabas")
 
 evt_id = 0

@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+
+"""
+TRasgo Enhanced and Beautiful configuration toOL
+"""
+
 import os
 import json
 import numpy as np
@@ -17,6 +23,8 @@ print(r"     / ___/ _ \| \ | |  ___|_ _/ ___|")
 print(r"    | |  | | | |  \| | |_   | | |  _ ")
 print(r"    | |__| |_| | |\  |  _|  | | |_| |")
 print(r"     \____\___/|_| \_|_|   |___\____|")
+
+print("\nTRasgo Enhanced and Beautiful configuration toOL")
 
 print("\n    ", "-" * 33)
 print("\n\n\n")
@@ -72,13 +80,14 @@ while True:
 # =================================================== #
 
 rd_seed = None
+ntracks = None
 print("\n\n\n")
 print("Do you want to simulate tracks?")
 print("     y/yes.- Yes, of course!")
 print("      n/no.- Nope, Thanks :) I want to reconstruct real data <-- [DEFAULT]")
 b_sim = input("Answer: ")
 if b_sim in ["y", "Y", "yes", "yeah"]:
-    print("You have chosen Yeah! Then:")
+    print(f"You have chosen {b_sim} Then:")
     print("Do you want generate random tracks in each run?")
     print("     y/yes.- Yeah")
     print("   integer.- Nope, always same numbers, not random.")
@@ -93,6 +102,15 @@ if b_sim in ["y", "Y", "yes", "yeah"]:
             break
         else:
             print("Wrong answer, again...")
+
+    print("How many tracks do you want to generate?")
+    while True:
+        ntracks = input("Number of tracks (int): ")
+        if ntracks.isdigit():
+            ntracks = int(ntracks)
+            break
+        else:
+            print("How am I going to generate fractional traces? Please give me an integer...")
 elif b_sim in ["n", "N", "nope", "Nope", "no", "nope"]:
     print("So we don't need this configurations... let's continue!")
 else:
@@ -102,6 +120,7 @@ else:
 # Update all variables:
 config["heights_planes"] = heights_planes
 config["rd_seed"] = rd_seed
+config["tracks_number"] = ntracks
 
 print("\n\n\nConfiguration saved to config/configuration.json file")
 print("-" * 33)

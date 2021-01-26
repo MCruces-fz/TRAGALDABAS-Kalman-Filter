@@ -4,18 +4,17 @@ import ROOT
 import numpy as np
 from os.path import join as join_path
 import time as tm_count
-from modules.utils import empty
+from modules.utils import empty, timer
 from config.const import *
-
-start_time = tm_count.perf_counter()
-
-l = empty([12, 23, 34])
+from typing import Union
 
 
 # TODO: Leer en un TClonesArray directamente del objeto TTree -> rpchit --> TClonesArray con fX, fY, fZ
 
 class RootUnpacker:
-    def __init__(self, data_dir: str, show_prints: bool = False):
+    def __init__(self, data_dir: str, show_prints: bool = False, data_range: Union[str, int] = "all",
+                 branch: str = "rpchit"):
+
         self.DST_DIR = join_path(data_dir, "DST")
         self.LUPTAB_DIR = join_path(data_dir, "luptab")
 
@@ -28,8 +27,13 @@ class RootUnpacker:
         self.root_out = None
 
         self.show_prints = show_prints
+        self.data_range = data_range
+        self.branch = branch
 
     def set_root_out(self):
+        """
+        Set the root output in raw format. Main function.
+        """
 
         input_file_path = join_path(self.DST_DIR, "tr18249041152.hld.root.root")
 
@@ -48,8 +52,11 @@ class RootUnpacker:
                 print(f"  - {br.GetName()}")
 
         self.root_out = []
-
-        for entry in range(self.nentries)[:10]:
+        if self.data_range == "all":
+            entries = range(self.nentries)
+        else:
+            entries = range(self.nentries)[:self.data_range]
+        for entry in entries:
             # Para cada evento del tree hay que cargar todas las branches sino no existe el rpchit
             ev = self.tree.GetEntry(entry)
             nhit = self.tree.rpchit.GetEntries()
@@ -57,15 +64,15 @@ class RootUnpacker:
             if self.show_prints:
                 print(f'@@@ ===== Event: {ev} ===== @@@')
 
-            fTrbnum = self.tree.GetLeaf("rpchit.fTrbnum")
-            fCell = self.tree.GetLeaf("rpchit.fCell")
-            fCol = self.tree.GetLeaf("rpchit.fCol")
-            fRow = self.tree.GetLeaf("rpchit.fRow")
-            fX = self.tree.GetLeaf("rpchit.fX")
-            fY = self.tree.GetLeaf("rpchit.fY")
-            fZ = self.tree.GetLeaf("rpchit.fZ")
-            fTime = self.tree.GetLeaf("rpchit.fTime")
-            fCharge = self.tree.GetLeaf("rpchit.fCharge")
+            fTrbnum = self.tree.GetLeaf(f"{self.branch}.fTrbnum")
+            fCell = self.tree.GetLeaf(f"{self.branch}.fCell")
+            fCol = self.tree.GetLeaf(f"{self.branch}.fCol")
+            fRow = self.tree.GetLeaf(f"{self.branch}.fRow")
+            fX = self.tree.GetLeaf(f"{self.branch}.fX")
+            fY = self.tree.GetLeaf(f"{self.branch}.fY")
+            fZ = self.tree.GetLeaf(f"{self.branch}.fZ")
+            fTime = self.tree.GetLeaf(f"{self.branch}.fTime")
+            fCharge = self.tree.GetLeaf(f"{self.branch}.fCharge")
 
             root_evt = np.zeros([0, 9], dtype=np.float16)
 
@@ -102,6 +109,8 @@ class RootUnpacker:
         """
         if self.root_out is None:
             self.set_root_out()
+        if self.luptab is None:
+            self.set_luptabs()
 
         self.tragas_out = []
         for evt_id in range(len(self.root_out)):
@@ -111,15 +120,13 @@ class RootUnpacker:
             # print("Number of planes: ", NPLAN)
             for trbnum, cell, col, row, x, y, z, time, charge in self.root_out[evt_id]:
                 try:
-                    plane_id, = np.where(VZ0 == z)
-                    cell = int(cell)
                     row, col = int(row), int(col)
-                    print(z, cell)
-                    print(f"Tree ---> col: {col:02d}, row: {row:02d}")
-                    print(f"          X: {x:.3f},     Y: {y:.3f}")
+                    plane_id, = np.where(VZ0 == z)
                     x2, y2 = self.luptab[z][f"{col:02d}-{row:02d}"]
-                    print(f"Luptab -> X: {x2:.3f},     Y: {y2:.3f}")
                     tragas_evt[plane_id[0]].extend([col, row, time])
+                    # print(f"Tree ---> col: {col:02d}, row: {row:02d}")
+                    # print(f"          X: {x:.3f},     Y: {y:.3f}")
+                    # print(f"Luptab -> X: {x2:.3f},     Y: {y2:.3f}")
                 except IndexError:
                     print("Error choosing array index in root2tragas() on root_unpacker.py")
 
@@ -170,21 +177,25 @@ class RootUnpacker:
 
                 height_row = 2 + luptab_row  # Row where is the height of the plane
                 height = float(lines[height_row].split()[1])  # Height value (float)
-                # print(height)
 
                 array_from = 3 + luptab_row  # Start line of the luptab data
                 array_to = array_from + 120  # End line of the luptab data
                 array_lines = lines[array_from:array_to]  # list of lines (str) with luptab data
-                # ary = np.asarray([list(map(float, line.split())) for line in array_lines])  # luptab array
-                # luptab[height] = {int(j.split()[0]): dict(zip(["mbnum",  # Mother Board Number
-                #                                                "mbchann",  # Mother Board Channel
-                #                                                "tdcchann",  # TDC Channel
-                #                                                "colkx",  # Column index
-                #                                                "rowky",  # Row index
-                #                                                "X0",  # X mm
-                #                                                "Y0"],  # Y mm
-                #                                               map(float, j.split()[1:]))) for j in
-                #                   array_lines}  # luptab dictionary
+                ''' L U P T A B   A R R A Y
+                ary = np.asarray([list(map(float, line.split())) for line in array_lines])
+                '''
+                ''' L U P T A B   D I C T I O N A R Y - 1
+                luptab[height] = {int(j.split()[0]): dict(zip(["mbnum",  # Mother Board Number
+                                                               "mbchann",  # Mother Board Channel
+                                                               "tdcchann",  # TDC Channel
+                                                               "colkx",  # Column index
+                                                               "rowky",  # Row index
+                                                               "X0",  # X mm
+                                                               "Y0"],  # Y mm
+                                                              map(float, j.split()[1:]))) for j in
+                                  array_lines}
+                '''
+                ''' L U P T A B   D I C T I O N A R Y - 2 '''
                 luptab[height] = {f"{int(j.split()[4]):02d}-{int(j.split()[5]):02d}": list(map(float, j.split()[6:8]))
                                   for j in array_lines}  # luptab dictionary
         self.luptab = luptab
@@ -194,17 +205,53 @@ class RootUnpacker:
             self.set_luptabs()
         return self.luptab
 
+    def event_topology(self):
+        """
+        This method performs a study on the number of events with each topology.
+        """
+        if self.tragas_out is None:
+            self.root2tragas()
+
+        m1, m2, m3, mh = [0] * 4
+
+        for event in self.tragas_out:
+            mult = event[:, 0]
+            # print(mult)
+
+            if np.all(mult == 1):
+                print("M1")
+                m1 += 1
+            elif np.all(mult == 2):
+                print("M2")
+                m2 += 1
+            elif np.all(mult == 3):
+                print("M3")
+                m3 += 1
+            elif np.all(mult >= 3):
+                print("High Multiplicity")
+                mh += 1
+            else:
+                print("Other things")
+        print(m1, m2, m3, mh)
+
 
 debug_time = False
 if __name__ == '__main__' and debug_time:
-    root_unpacker = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial")
-    root_out = root_unpacker.get_root_out()
-    # print(root_out)
+    @timer
+    def debug_unpack():
+        unpack = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial")
+        root_output = unpack.get_root_out()
+        return root_output
 
-    end_time = tm_count.perf_counter()
-    print(f"\nCPU time: {end_time - start_time:.5f} s")
 
-if __name__ == '__main__':
-    root_unpacker = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial", show_prints=False)
-    luptb = root_unpacker.get_luptabs()
-    root_out = root_unpacker.get_root_out(out_format="tragaldabas")
+    output = debug_unpack()
+
+run_main = True
+if __name__ == '__main__' and run_main:
+    root_unpacker = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial",
+                                 show_prints=False, data_range="all")
+    # luptb = root_unpacker.get_luptabs()
+    # root_out = root_unpacker.get_root_out(out_format="tragaldabas")
+    # print(root_out[2])
+
+    root_unpacker.event_topology()

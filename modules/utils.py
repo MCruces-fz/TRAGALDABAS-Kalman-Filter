@@ -8,6 +8,31 @@ import functools
 import time
 
 
+def set_root_environment(abs_soft_path: str or None = None):
+    """
+    Set the root environment to work with TRUFA software
+
+    :param abs_soft_path: Path to the full TRUFA code
+    :return: Void Function
+    """
+
+    from ROOT import gROOT, gStyle, gSystem
+    from os.path import join as join_path
+
+    # ROOT Environment
+    if abs_soft_path is None:
+        abs_soft_path = "/home/mcruces/Documents/GitHub/TRAGALDABAS-fantastic-Cpp/soft_TT"
+
+    libtunpacker_path = join_path(abs_soft_path, "libtunpacker.so")
+    gSystem.Load("libGraf")
+    gSystem.Load(libtunpacker_path)
+    print("Unpacker for stand alone TRB loaded")
+    gStyle.SetOptStat(0)
+    gStyle.SetOptFit(0)
+    gStyle.SetPalette(55)
+    gROOT.SetStyle("Plain")
+
+
 def timer(func):
     """Print the runtime of the decorated function"""
 

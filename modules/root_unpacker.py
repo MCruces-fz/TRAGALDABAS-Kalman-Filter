@@ -9,7 +9,10 @@ from config.const import *
 from typing import Union
 
 
-# TODO: Leer en un TClonesArray directamente del objeto TTree -> rpchit --> TClonesArray con fX, fY, fZ
+# TODO (MCruces-fz):
+#  Leer en un TClonesArray directamente del objeto TTree -> rpchit --> TClonesArray con fX, fY, fZ
+#  Implementar opción de leer un sólo archivo .hld.root.root o todos los de un directorio
+#  Limpiar la forma en la que se leen las branches (automático o introducido por el usuario)
 
 class RootUnpacker:
     def __init__(self, data_dir: str, show_prints: bool = False, data_range: Union[str, int] = "all",
@@ -212,27 +215,34 @@ class RootUnpacker:
         if self.tragas_out is None:
             self.root2tragas()
 
-        m1, m2, m3, mh = [0] * 4
+        m1, m2, m3, mh, other = [0] * 5
 
         for event in self.tragas_out:
             mult = event[:, 0]
             # print(mult)
 
             if np.all(mult == 1):
-                print("M1")
+                # print("M1")
                 m1 += 1
             elif np.all(mult == 2):
-                print("M2")
+                # print("M2")
                 m2 += 1
             elif np.all(mult == 3):
-                print("M3")
+                # print("M3")
                 m3 += 1
             elif np.all(mult >= 3):
-                print("High Multiplicity")
+                # print("High Multiplicity")
                 mh += 1
             else:
-                print("Other things")
-        print(m1, m2, m3, mh)
+                # print("Other things")
+                other += 1
+
+        total = m1 + m2 + m3 + mh + other
+
+        print(f"M1: {m1 / total * 100}%")
+        print(f"M2: {m2 / total * 100}%")
+        print(f"M3: {m3 / total * 100}%")
+        print(f"MH: {mh / total * 100}%")
 
 
 debug_time = False

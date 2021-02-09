@@ -1,6 +1,16 @@
 from config.const import *
 from typing import Union
 
+# TODO:
+#  Rename GenerateEvent -> SimEvent
+#  Delete methods set_root_output, get_root_output, set_mdet_output, get_mdet_output
+#  Rename trag_digitization to digitization (or something like that)
+#      - General digitization for every trasgo detector
+#  Return events in arrays like:
+#      [[trb, row, col, time],
+#       [trb, row, col, time],
+#       [       . . .       ],
+
 
 class GenerateEvent:
     def __init__(self, all_tracks_in: bool = True, in_track: Union[int, None] = NTRACK):

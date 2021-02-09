@@ -1,15 +1,25 @@
+"""
+Reconstruction reading real data from ROOT files
+
+@author: MCruces-fz
+"""
 from config.const import *  # <- config is imported here
 
 from modules.root_unpacker import RootUnpacker
 from modules.tracks_reconstruction import TrackFinding
 
 # Randomize if if_seed is an integer seed
-if config["if_seed"] is not None:
-    np.random.seed(config["if_seed"])
+if config["random_seed"] is not None:
+    np.random.seed(config["random_seed"])
 
 # sim_evt = GenerateEvent()
 # mdet_out = sim_evt.get_mdet_output()
 # root_out = sim_evt.get_root_output()
+
+from ROOT import gSystem
+libtunpacker_path = join_path(TRUFA_LIB_DIR, "libtunpacker.so")
+gSystem.Load(libtunpacker_path)
+
 
 get_evts = RootUnpacker(data_dir="/home/mcruces/Documents/PyROOT_Useful/pyroot_tutorial",
                         show_prints=False, data_range=10)

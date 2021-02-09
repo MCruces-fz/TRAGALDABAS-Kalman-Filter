@@ -119,7 +119,7 @@ else:
 
 # Update all variables:
 config["heights_planes"] = heights_planes
-config["rd_seed"] = rd_seed
+config["random_seed"] = rd_seed
 config["tracks_number"] = ntracks
 
 print("\n\n\nConfiguration saved to config/configuration.json file")

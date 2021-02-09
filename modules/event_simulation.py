@@ -1,8 +1,9 @@
 from config.const import *
+from typing import Union
 
 
 class GenerateEvent:
-    def __init__(self, all_tracks_in: bool = True, in_track=NTRACK):
+    def __init__(self, all_tracks_in: bool = True, in_track: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
         Note:
@@ -24,9 +25,13 @@ class GenerateEvent:
             self.hit_coords (:obj: float): Impact point. Data detector like --> digitized
         """
         self.all_tracks_in = all_tracks_in
-        self.in_track = in_track
 
-        self.tracks_number: int or None = None
+        if in_track is None:
+            self.in_track = np.random.randint(1, 4)
+        else:
+            self.in_track = in_track
+
+        self.tracks_number = None
         self.generated_tracks = np.zeros([0, NPAR])
 
         self.root_output = None

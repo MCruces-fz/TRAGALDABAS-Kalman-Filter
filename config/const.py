@@ -1,45 +1,17 @@
 import numpy as np
+import json
+import os
+from os.path import join as join_path
 
-import_config = False
-if import_config:
-    import json
+CONF_DIR = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = join_path(CONF_DIR, "../")
 
-    # Read Configurations from configuration.json
-    with open("configuration.json", "r") as config_file:
-        config = json.load(config_file)
-else:
-    config = {
-        "if_seed": 0,
-        "kf_cut": 0,  # 0.6,
-        "tt_cut": 0,  # 1e-5,
-        "tracks_number": 2,
-        "single_run": {
-            "do": True,
-            "plot_representations": False,
-            "final_prints": True,
-            "save_diff": False
-        },
-        "efficiency": {
-            "do": False,
-            "prints": True,
-            "plots": True,
-            "save_txt": False
-        }
-    }
+# /home/mcruces/Documents/GitHub/TRAGALDABAS-Kalman-Filter/config/configuration.json
+# Read Configurations from configuration.json
+with open(join_path(CONF_DIR, "configuration.json"), "r") as config_file:
+    config = json.load(config_file)
 
-"""
-#   --   S A V E   D I F F E R E N C I E S   --   #
-___________________ (save_diff) ___________________
-
-Set if save differences between parameters of the generated and reconstructed 
-SAETAs,
-    Sgen = [X0g, XPg, Y0g, YPg, T0g, S0g]
-    Srec = [X0r, XPr, Y0r, YPr, T0r, S0r]
-on 'saetas_file.csv'
-(X0r - X0g), (XPr - XPg), (Y0r - Y0g), (YPr - YPg), (T0r - T0g), (S0r - S0g)
-[..., ..., ..., ..., ..., ..., ..., ..., ...]
-on append mode.
-"""
+TRUFA_LIB_DIR = "/home/mcruces/Documents/GitHub/TRAGALDABAS-fantastic-Cpp/soft_TT/"
 
 # ========================================================================== #
 # ============================ C O N S T A N T S =========================== #

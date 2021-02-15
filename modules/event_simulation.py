@@ -2,7 +2,6 @@ from config.const import *
 from typing import Union
 
 # TODO:
-#  Rename GenerateEvent -> SimEvent
 #  Delete methods set_root_output, get_root_output, set_mdet_output, get_mdet_output
 #  Rename trag_digitization to digitization (or something like that)
 #      - General digitization for every trasgo detector
@@ -12,7 +11,7 @@ from typing import Union
 #       [       . . .       ],
 
 
-class GenerateEvent:
+class SimEvent:
     def __init__(self, all_tracks_in: bool = True, in_track: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
@@ -37,7 +36,7 @@ class GenerateEvent:
         self.all_tracks_in = all_tracks_in
 
         if in_track is None:
-            self.in_track = np.random.randint(1, 4)
+            self.in_track = self.rd_tracks_number()
         else:
             self.in_track = in_track
 
@@ -51,6 +50,18 @@ class GenerateEvent:
         self.hit_digits = np.zeros([0, NPLAN * NDAC])  # Hits in index coordinates at index 1
 
         self.gene_tracks()
+
+    @staticmethod
+    def rd_tracks_number() -> int:
+        """
+        Generate a realistic randomized number of tracks passing
+        through the detector.
+
+        :return: Number of tracks to generate.
+        """
+        tracks = [1, 2, 3, 4]
+        probs = [0.9, 0.09, 0.009, 0.001]
+        return np.random.choice(tracks, p=probs)
 
     @staticmethod
     def set_T0(t_random: bool = True):
@@ -162,102 +173,4 @@ class GenerateEvent:
         # self.hit_coords = np.delete(self.hit_coords, 0, axis=0)
         # self.hit_digits = np.delete(self.hit_digits, 0, axis=0)
         # return self.hit_digits, self.hit_digits
-
-    def set_root_output(self):
-        """
-        Emulates ROOT Trufa Output
-
-        :return root_inp: 2D Array with hits in rows and
-            trbnum, cell, col, row, x, y, z, time, charge
-            as columns
-        """
-
-        if np.all(self.hit_digits == 0):
-            if self.tracks_number is None:
-                self.gene_tracks()
-            self.trag_digitization()
-
-        trbnum, cell, col, row, x, y, z, time, charge = [np.array([], dtype=np.float32)] * 9
-
-        # Indices for x, y and time values on self.hit_digits matrix (at index = 1):
-        x_ids = np.arange(NPLAN) * NDAC
-        y_ids = x_ids + 1
-        time_ids = x_ids + 2
-        for rdat in self.hit_digits:  # Data on each row -> 1D array on axis 1
-            coli = rdat[x_ids]  # Column indices
-            rowi = rdat[y_ids]  # Row indices
-
-            trbnum = np.hstack((trbnum, range(NPLAN)))
-            col = np.hstack((col, coli))
-            row = np.hstack((row, rowi))
-            cell = np.hstack((cell, NCX * rowi + coli))
-            x = np.hstack((x, (coli + 0.5) * WCX))
-            y = np.hstack((y, (rowi + 0.5) * WCY))
-            z = np.hstack((z, VZ0.copy()))
-            time = np.hstack((time, rdat[time_ids]))
-            charge = np.hstack((charge, np.random.rand(NPLAN)))
-
-        self.root_output = np.vstack((trbnum, cell, col, row, x, y, z, time, charge)).T
-        np.random.shuffle(self.root_output)
-
-    def get_root_output(self, new_run: bool = False):
-        if self.root_output is None or new_run:
-            self.set_root_output()
-        return self.root_output
-
-    def set_mdet_output(self):  # , hit_digits):
-        """
-        Creates a k_mat similar to TRAGALDABAS output data
-        Matrix with columns: (nhits, kx, ky, time)
-
-        :param hit_digits: Matrix of generated and digitized tracks.
-        :return: Equivalent k_mat to m_data, in TRAGALDABAS format.
-        """
-        if np.all(self.hit_digits == 0):  # Check if mdat is all zero
-            self.trag_digitization()
-            # raise Exception('No tracks available! Matrix mdat is all zero ==> Run '
-            #                 'the program Again because actual random seed is not '
-            #                 f'valid for {NTRACK} number of tracks')
-        ntrk, _ = self.hit_digits.shape  # Number of tracks, number of plans
-        ncol = 1 + NDAC * ntrk  # One more column to store number of tracks
-        self.mdet = np.zeros([NPLAN, ncol])
-        idat = 0
-        for ip in range(NPLAN):
-            idet = 0
-            for it in range(ntrk):
-                ideti = idet + 1
-                idetf = ideti + NDAC
-                idatf = idat + NDAC
-                self.mdet[ip, ideti:idetf] = self.hit_digits[it, idat:idatf]
-                if not np.all((self.mdet[ip, ideti:idetf] == 0)):  # checks if all are zero
-                    self.mdet[ip, 0] += 1
-                idet += NDAC
-            idat += NDAC
-        # return tragas_out
-
-    def get_mdet_output(self, new_run: bool = False):
-        if self.mdet is None or new_run:
-            self.set_mdet_output()
-        return self.mdet
-
-
-gene_debug = False
-if __name__ == "__main__" and gene_debug:
-    from utils import print_tables
-
-    event = GenerateEvent(in_track=NTRACK)
-    root_output = event.get_root_output()
-    mdet_output = event.get_mdet_output()
-
-    saetas = event.generated_tracks
-    print_tables(saetas, columns=["X0", "XP", "Y0", "YP", "T0", "S0"], rows=["SAETA1", "SAETA2"])
-
-    mdat = event.hit_digits
-    mdpt = event.hit_coords
-
-    prt = False
-    if prt:
-        for trbnum, cell, col, row, x, y, z, time, charge in root_output:
-            print(f"{int(trbnum)} {int(cell):02d} {int(col)} {int(row)} "
-                  f"{x:3.1f} {y:3.1f} {z:3.1f} {time:3.1f} {charge:.3f}")
 

@@ -21,26 +21,55 @@ class Saeta:
         :param t0:
         :param s0:
         """
-        self.x0 = x0
-        self.xp = xp
-        self.y0 = y0
-        self.yp = yp
-        self.t0 = t0
-        self.s0 = s0
 
-        # self.ks = None
+        # Use the saeta setter
+        self.saeta = (x0, xp, y0, yp, t0, s0)
 
     @property
     def ks(self):
-        if self.ks is None:
-            self.ks = np.sqrt(1 + self.xp ** 2 + self.yp ** 2)
-        return self.ks
+        # if self.ks is None:
+            # self.ks = np.sqrt(1 + self.xp ** 2 + self.yp ** 2)
+        # print("Getter used!")
+        return self._ks
 
     @ks.setter
     def ks(self, ks):
         # if ks is None:
         #     raise ValueError("Can't be None type")
-        self.ks = ks
+        # print("Setter used!")
+        self._ks = ks
+
+    @property
+    def saeta(self):
+        return self._saeta
+
+    @saeta.setter
+    def saeta(self, values):
+        x0, xp, y0, yp, t0, s0 = values
+
+        self._x0 = x0
+        self._xp = xp
+        self._y0 = y0
+        self._yp = yp
+        self._t0 = t0
+        self._s0 = s0
+
+        self._saeta = np.array([[x0], [xp], [y0], [yp], [t0], [s0]])
+
+        self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
+
+    @property
+    def coords(self):
+        coords = [self._x0, self._xp, self._y0, self._yp, self._t0, self._s0]
+        return coords
+
+    def show(self):
+        print(f"|{self._x0: 7.1f} |\n"\
+              f"|{self._xp: 7.3f} |\n"\
+              f"|{self._y0: 7.1f} |\n"\
+              f"|{self._yp: 7.3f} |\n"\
+              f"|{self._t0: 7.0f} |\n"\
+              f"|{self._s0: 7.3f} |\n")
         
     def transport(self, dz):
         """

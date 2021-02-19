@@ -104,10 +104,17 @@ if b_sim in ["y", "Y", "yes", "yeah"]:
             print("Wrong answer, again...")
 
     print("How many tracks do you want to generate?")
+    print("   integer.- Number of randomly generated tracks.")
+    print("         (Give me an integer seed)")
+    print("        RD.- Random number of tracks.")
+    print("         (Following a real distribution of number of tracks)")
     while True:
         ntracks = input("Number of tracks (int): ")
         if ntracks.isdigit():
             ntracks = int(ntracks)
+            break
+        elif ntracks in ["RD", "rd"]:
+            ntracks = None
             break
         else:
             print("How am I going to generate fractional traces? Please give me an integer...")

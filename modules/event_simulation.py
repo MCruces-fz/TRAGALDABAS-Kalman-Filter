@@ -50,6 +50,7 @@ class SimEvent:
         self.hit_digits = np.zeros([0, NPLAN * NDAC])  # Hits in index coordinates at index 1
 
         self.gene_tracks()
+        self.digitization()
 
     @staticmethod
     def rd_tracks_number() -> int:
@@ -165,17 +166,14 @@ class SimEvent:
         nx = 0
         zt = VZ1[0]  # Z top
         for it in range(self.event.multiplicity):
-            x0, xp, y0, yp, t0, s0 = self.event.coords(it)
+            saeta = self.event.saeta(it)
 
             it = 0
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
-                dz = zi - zt  # dz >= 0
 
-                xi = x0 + xp * dz
-                yi = y0 + yp * dz
-                ks = np.sqrt(1 + xp ** 2 + yp ** 2)
-                ti = t0 + ks * s0 * dz  # Time Flies (dz > 0)
+                saeta.z0 = zi
+                xi, _, yi, _, ti, _ = saeta.coords
 
                 # Position indices of the impacted cells (cell index)
                 kx = np.int((xi + (WCX / 2)) / WCX)

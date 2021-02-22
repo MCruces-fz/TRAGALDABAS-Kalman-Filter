@@ -1,7 +1,11 @@
-from modules.event import Event
-from modules.saeta import Saeta
-from config.const import *
-from typing import Union
+import numpy as np
+from typing import Union, List
+
+from simulation.event import Event
+from simulation.saeta import Saeta
+from simulation.hit import Hit
+from config.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
+
 
 # TODO:
 #  Return events in arrays like:
@@ -41,13 +45,6 @@ class SimEvent:
 
         self.tracks_number = None
         self.event = Event()
-        # self.generated_tracks = np.zeros([0, NPAR])
-
-        self.root_output = None
-        self.mdet = None
-
-        self.hit_coords = np.zeros([0, NPLAN * NDAC])  # Hits in mm coordinates at index 1
-        self.hit_digits = np.zeros([0, NPLAN * NDAC])  # Hits in index coordinates at index 1
 
         self.gene_tracks()
         self.digitization()
@@ -161,37 +158,53 @@ class SimEvent:
         :return: hit_digits (cell indices k_mat) and hit_coords (cell central
             positions k_mat).
         """
-        v_dat = np.zeros(NPLAN * NDAC)  # Digitalizing tracks vector
-        v_dpt = np.zeros(NPLAN * NDAC)  # Vector with impact point
-        nx = 0
-        zt = VZ1[0]  # Z top
+
         for it in range(self.event.multiplicity):
             saeta = self.event.saeta(it)
 
-            it = 0
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
 
+                # Set saeta at height zi
                 saeta.z0 = zi
                 xi, _, yi, _, ti, _ = saeta.coords
 
                 # Position indices of the impacted cells (cell index)
-                kx = np.int((xi + (WCX / 2)) / WCX)
-                ky = np.int((yi + (WCY / 2)) / WCY)
-                kt = np.int((ti + (DT / 2)) / DT) * DT
+                col, row, time = saeta.digitized
 
-                # # Cell position (distance)
-                # xic = kx * WCX + (WCX / 2)
-                # yic = ky * WCX + (WCX / 2)
+                hit = Hit(ip, col, row, time)
+                self.event.add_hit(hit, randomize=True)
 
-                vpnt = np.asarray([xi, yi, ti])  # (X,Y,T) impact point
-                vxyt = np.asarray([kx, ky, kt])  # impact index
-                v_dpt[it:it + NDAC] = vpnt[0:NDAC]
-                v_dat[it:it + NDAC] = vxyt[0:NDAC]
-                it += 3
-            self.hit_coords = np.vstack((self.hit_coords, v_dpt))  # ( X, Y, T) impact point
-            self.hit_digits = np.vstack((self.hit_digits, v_dat))  # (kx,ky,kt) impact index
-            nx += 1
+    @property
+    def hits_num(self) -> int:
+        """
+        Number of total hits in event
+
+        :return: Number of hits.
+        """
+        return len(self.event.hits)
+
+    @property
+    def hit_coords(self) -> np.array:
+        """
+        Hit coordinates
+
+        :return: Numpy array with all hits coordinates
+        """
+        hits = np.zeros((0, 4))
+        for hit in range(self.hits_num):
+            hits = np.vstack((hits, self.event.hits[hit].values))
+        return hits
+
+    @property
+    def hits(self) -> List[object]:
+        """
+        Hit objects
+
+        :return: List with all hit objects
+        """
+        return self.event.hits
+
 
 if __name__ == "__main__":
     sim = SimEvent()

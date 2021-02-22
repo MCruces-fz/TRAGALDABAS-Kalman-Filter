@@ -8,7 +8,7 @@ miguel.cruces.fernandez@gmail.com
 from typing import List, Union, Tuple
 import numpy as np
 
-from config.const import *
+from config.const import VZ1, WCX, WCY, DT
 
 
 class Saeta:
@@ -71,11 +71,11 @@ class Saeta:
         return coords
 
     def show(self):
-        print(f"|{self._x0: 7.1f} |\n"\
-              f"|{self._xp: 7.3f} |\n"\
-              f"|{self._y0: 7.1f} |\n"\
-              f"|{self._yp: 7.3f} |\n"\
-              f"|{self._t0: 7.0f} |\n"\
+        print(f"|{self._x0: 7.1f} |\n"
+              f"|{self._xp: 7.3f} |\n"
+              f"|{self._y0: 7.1f} |\n"
+              f"|{self._yp: 7.3f} |\n"
+              f"|{self._t0: 7.0f} |\n"
               f"|{self._s0: 7.3f} |\n")
 
     @property
@@ -84,6 +84,14 @@ class Saeta:
 
     @z0.setter
     def z0(self, z0: float):
+        """
+        Set the height z0 and transport the saeta to that point, representing
+        the new coordinates (x0, y0, t0) assuming the particle slowness s0
+        defined at the beginning.
+
+        :param z0: Vertical possition of the particle in mm (possitive from top
+            plane to bottom).
+        """
         if z0 is None:
             raise ValueError("z0 can't be None type")
 
@@ -111,3 +119,15 @@ class Saeta:
 
         self._z0 += dz
 
+    @property
+    def digitized(self):
+        """
+        Digitize the hit of the saeta following the soze of the cells at current height z0.
+
+        :return: column and row of the cell in the detector and digitized time of the hit.
+        """
+        col = np.int((self._x0 + WCX / 2) / WCX)
+        row = np.int((self._y0 + WCY / 2) / WCY)
+        time = np.int((self._t0 + DT / 2) / DT) * DT
+        
+        return col, row, time

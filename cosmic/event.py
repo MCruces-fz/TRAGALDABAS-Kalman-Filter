@@ -6,7 +6,7 @@ E V E N T   C L A S S
 @email: mcsquared.fz@gmail.com
 """
 
-from simulation.saeta import Saeta
+from cosmic.saeta import Saeta
 from typing import List
 import numpy as np
 

@@ -1,9 +1,9 @@
 import numpy as np
 from typing import Union, List
 
-from simulation.event import Event
-from simulation.saeta import Saeta
-from simulation.hit import Hit
+from cosmic.event import Event
+from cosmic.saeta import Saeta
+from cosmic.hit import Hit
 from config.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
 
 

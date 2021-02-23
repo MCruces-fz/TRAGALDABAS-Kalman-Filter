@@ -7,43 +7,22 @@ from cosmic.hit import Hit
 from utils.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
 
 
-# TODO:
-#  Return events in arrays like:
-#      [[trb, row, col, time],
-#       [trb, row, col, time],
-#       [       . . .       ],
-
-
 class SimEvent:
-    def __init__(self, all_tracks_in: bool = True, in_track: Union[int, None] = NTRACK):
+    def __init__(self, tracks_number: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
-        Note:
-            Blah-blah-blah...
-
         Args:
-            all_tracks_in (bool, optional): True ifforce n_tracks == NTRACKS or False if n_tracks <= NTRACKS
-                randomly deleting outsiders.
-            in_track (int, optional): Number of tracks to generate
+            tracks_number (int, optional): Number of tracks to generate
 
         Attributes:
-            self.all_tracks_in (int):
-            self.in_track (int):
-
             self.tracks_number (int): Number of tracks generated across the detector.
-            self.generated_tracks (:obj: float): Matrix of generated tracks (SAETAs)
-
-            self.hit_digits (:obj: float): Real impact points of each generated saeta
-            self.hit_coords (:obj: float): Impact point. Data detector like --> digitized
         """
-        self.all_tracks_in = all_tracks_in
 
-        if in_track is None:
-            self.in_track = self.rd_tracks_number()
+        if tracks_number is None:
+            self.tracks_number = self.rd_tracks_number()
         else:
-            self.in_track = in_track
+            self.tracks_number = tracks_number
 
-        self.tracks_number = None
         self.event = Event()
 
         self.gene_tracks()
@@ -73,7 +52,7 @@ class SimEvent:
         :param t_random: Choose if set T0 randomly or equal to TINI
         """
         if t_random:
-            return (0.5 + np.random.random()) * TINI
+            return (1 + np.random.random() / 2) * TINI
         else:
             return TINI
 
@@ -124,10 +103,9 @@ class SimEvent:
         :return generated_tracks: Matrix of generated tracks (initial saetas_array).
         :return tracks_number: Total number of tracks in the detector
         """
-        # lenz = abs(VZI[0] - VZI[-1])  # Distance from bottom to top planes
-        it = 0  # Number of tracks actually
-        i = 1
-        while i <= self.in_track:
+
+        count_tracks = 0
+        while count_tracks < self.tracks_number:
             theta, phi = self.angle_distribution(THMAX)
 
             X0 = np.random.random() * LENX
@@ -150,17 +128,10 @@ class SimEvent:
             x_mid = xz_end - (LENX / 2)
             y_mid = yz_end - (LENY / 2)
 
-            if not self.all_tracks_in:
-                i += 1
             # We check if the particle has entered the detector
             if np.abs(x_mid) < (LENX / 2) and np.abs(y_mid) < (LENY / 2):
-                # saeta = np.array([X0, XP, Y0, YP, T0, S0])
-                # self.generated_tracks = np.vstack((self.generated_tracks, saeta))
                 self.event.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0))
-                it += 1
-                if self.all_tracks_in:
-                    i += 1
-        self.tracks_number = it  # number of tracks in the detector
+                count_tracks += 1
 
     def digitization(self):
         """

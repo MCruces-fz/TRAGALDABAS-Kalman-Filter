@@ -126,8 +126,14 @@ class Saeta:
 
         :return: column and row of the cell in the detector and digitized time of the hit.
         """
-        col = np.int((self._x0 + WCX / 2) / WCX)
-        row = np.int((self._y0 + WCY / 2) / WCY)
+        # TODO: Ask Hans about that
+
+        col = np.int(self._x0 / WCX)
+        row = np.int(self._y0 / WCY)
         time = np.int((self._t0 + DT / 2) / DT) * DT
+
+        # col = np.int((self._x0 + WCX / 2) / WCX)
+        # row = np.int((self._y0 + WCY / 2) / WCY)
+        # time = np.int((self._t0 + DT / 2) / DT) * DT
         
-        return col, row, time
+        return [col, row, time]

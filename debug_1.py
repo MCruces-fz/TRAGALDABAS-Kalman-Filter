@@ -10,7 +10,45 @@ print("Hit Digits:")
 for hi in range(len(sim.event.hits)):
     print(sim.event.hits[hi].values)
 
-print(sim.hits)
+sim.event.print_hits(size="small")
 
-# TODO: Archivo importante para eficiencia
-#  en TRAGALDABAS_Useful/tragaldabas_dimensions
+# TODO: Me parece que el propio código me está
+#  pidiendo que SimEvent herede de Event, este
+#  a su vez herede de Saeta, y esta de Hit.
+
+# TODO: Archivo importante para eficiencia en
+#  TRAGALDABAS_Useful/tragaldabas_dimensions
+
+"""
+
+*---*---*---*---*---*---*
+|   |   |   | X |   |   |
+*---*---*---*---*---*---*
+|   |   |   | X |   |   |
+*---*---*---*---*---*---*
+
+.---.---.---.---.---.---.
+|   |   | * |   |   |   |
+.---.---.---.---.---.---.
+|   |   |   | * |   |   |
+.---.---.---.---.---.---.
+
+:---:---:---:---:---:---:
+|   | * |   |   |   |   |
+:---:---:---:---:---:---:
+|   | * |   |   |   |   |
+:---:---:---:---:---:---:
+
++---+---+---+---+---+---+
+|   | * |   |   |   |   |
++---+---+---+---+---+---+
+|   |   | * |   |   |   |
++---+---+---+---+---+---+
+
+.........................
+: * :   :   :   :   :   :
+:...:...:...:...:...:...:
+:   :   :   :   : x :   :
+:...:...:...:...:...:...:
+
+"""

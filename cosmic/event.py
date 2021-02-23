@@ -7,6 +7,8 @@ E V E N T   C L A S S
 """
 
 from cosmic.saeta import Saeta
+from utils.const import NCX, NCY, NPLAN
+
 from typing import List
 import numpy as np
 
@@ -52,7 +54,7 @@ class Event:
         if 0 <= ind < len(self.saetas):
             return self.saetas[ind]
         else:
-            raise Exception(f"Index {ind} out of bounds: this event"
+            raise Exception(f"Index {ind} out of bounds: this event "
                             f"has {len(self.saetas)} saetas.")
 
     def coords(self, ind: int):
@@ -61,6 +63,54 @@ class Event:
     def print_saetas(self):
         for saeta in self.saetas:
             saeta.show()
+
+    def print_hits(self, size="small"):
+        """
+        
+        """
+
+        hits = np.zeros((NPLAN, NCY, NCX))
+
+        for hit in self.hits:
+            ip, col, row, time = hit.values
+            hits[ip, row, col] += 1
+
+        # print(hits)
+
+        if size == "big":
+
+            e = ".---"  # Edge
+            c = "."     # Corner
+            p = "|   "  # Void pad
+            h = "| * "  # Hit pad
+            l = "|"     # Limit   
+
+            for plane in hits:
+                for row in plane:
+                    edge = ""
+                    pad = ""
+                    for hit in row:
+                        edge += e
+                        if hit:
+                            pad += h
+                        else:
+                            pad += p
+                    print(edge + c)
+                    print(pad + l)
+                print(edge + c)
+                print("\n")
+
+        elif size == "small":
+            for plane in hits:
+                for row in plane:
+                    pad = ""
+                    for hit in row:
+                        if hit:
+                            pad += " X "
+                        else:
+                            pad += " . "
+                    print(pad)
+                print("\n")
 
 
 if __name__ == "__main__":

@@ -14,13 +14,14 @@ from utils.const import WCX, WCY
 
 class Hit:
     def __init__(self, trb_num, col, row, time):
-        self._trb_num = None
-        self._col = None
-        self._row = None
-        self._time = None
 
-        self._x_pos = None
-        self._y_pos = None
+        self.trb_num = trb_num
+        self.col = col
+        self.row = row
+        self.time = time
+
+        self._x_pos = self.col * WCX + WCX / 2
+        self._y_pos = self.row * WCY + WCY / 2
 
         self.values = (trb_num, col, row, time)
 
@@ -34,12 +35,8 @@ class Hit:
             trb_num, col, row, time = vals
         else:
             raise Exception("Hit is formed by four parameters: (trb_num, col, row, time)")
-        self.trb_num = trb_num
-        self.col = col
-        self.row = row
-        self.time = time
 
-        self._values = np.array([self.trb_num, self.col, self.row, self.time])
+        self._values = np.array([trb_num, col, row, time])
 
     @property
     def trb_num(self):
@@ -58,26 +55,6 @@ class Hit:
         self._col = col
 
     @property
-    def x_pos(self):
-        if self._x_pos is None:
-            self._x_pos = self.col * WCX + (WCX / 2)
-        return self._x_pos
-
-    # @x_pos.setter
-    # def x_pos(self, x_pos):
-    #     self._x_pos = x_pos
-
-    @property
-    def y_pos(self):
-        if self._y_pos is None:
-            self._y_pos = self.row * WCY + (WCY / 2)
-        return self._y_pos
-
-    # @y_pos.setter
-    # def y_pos(self, y_pos):
-    #     self._y_pos = y_pos
-
-    @property
     def row(self):
         return self._row
 
@@ -92,3 +69,17 @@ class Hit:
     @time.setter
     def time(self, time):
         self._time = time
+
+    @property
+    def x_pos(self):
+        """
+        Position at X axis in milimeters from the origin
+        """
+        return self._x_pos
+
+    @property
+    def y_pos(self):
+        """
+        Position at Y axis in milimeters from the origin
+        """
+        return self._y_pos

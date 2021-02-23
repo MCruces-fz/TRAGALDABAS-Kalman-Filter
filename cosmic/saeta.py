@@ -66,9 +66,9 @@ class Saeta:
         self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
 
     @property
-    def coords(self) -> list:
-        coords = [self._x0, self._xp, self._y0, self._yp, self._t0, self._s0]
-        return coords
+    def vector(self) -> list:
+        vector = [self._x0, self._xp, self._y0, self._yp, self._t0, self._s0]
+        return vector
 
     def show(self):
         print(f"|{self._x0: 7.1f} |\n"

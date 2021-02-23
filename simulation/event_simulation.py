@@ -7,7 +7,7 @@ from cosmic.hit import Hit
 from utils.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
 
 
-class SimEvent:
+class SimEvent(Event):
     def __init__(self, tracks_number: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
@@ -18,12 +18,11 @@ class SimEvent:
             self.tracks_number (int): Number of tracks generated across the detector.
         """
 
+        super().__init__()
         if tracks_number is None:
             self.tracks_number = self.rd_tracks_number()
         else:
             self.tracks_number = tracks_number
-
-        self.event = Event()
 
         self.gene_tracks()
         self.digitization()
@@ -130,7 +129,7 @@ class SimEvent:
 
             # We check if the particle has entered the detector
             if np.abs(x_mid) < (LENX / 2) and np.abs(y_mid) < (LENY / 2):
-                self.event.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0))
+                self.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0))
                 count_tracks += 1
 
     def digitization(self):
@@ -147,53 +146,18 @@ class SimEvent:
             positions k_mat).
         """
 
-        for it in range(self.event.multiplicity):
-            saeta = self.event.saeta(it)
+        for it in range(self.multiplicity):
+            saeta = self.saetas[it]
 
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
 
                 # Set saeta at height zi
                 saeta.z0 = zi
-                xi, _, yi, _, ti, _ = saeta.coords
+                xi, _, yi, _, ti, _ = saeta.vector
 
                 # Position indices of the impacted cells (cell index)
                 col, row, time = saeta.digitized
 
                 hit = Hit(ip, col, row, time)
-                self.event.add_hit(hit, randomize=True)
-
-    @property
-    def hits_num(self) -> int:
-        """
-        Number of total hits in event
-
-        :return: Number of hits.
-        """
-        return len(self.event.hits)
-
-    @property
-    def hit_coords(self) -> np.array:
-        """
-        Hit coordinates
-
-        :return: Numpy array with all hits coordinates
-        """
-        hits = np.zeros((0, 4))
-        for hit in range(self.hits_num):
-            hits = np.vstack((hits, self.event.hits[hit].values))
-        return hits
-
-    @property
-    def hits(self) -> List[object]:
-        """
-        Hit objects
-
-        :return: List with all hit objects
-        """
-        return self.event.hits
-
-
-if __name__ == "__main__":
-    sim = SimEvent()
-    sim.event.print_saetas()
+                self.add_hit(hit, randomize=True)

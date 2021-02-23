@@ -17,7 +17,7 @@ class Event:
     def __init__(self):
 
         self.saetas: List[object] = []
-        self.hits: List[object] = []
+        self._hits: List[object] = []
 
     def add_saeta(self, saeta: object):
         """
@@ -50,25 +50,50 @@ class Event:
     def multiplicity(self):
         return len(self.saetas)
 
-    def saeta(self, ind: int):
-        if 0 <= ind < len(self.saetas):
-            return self.saetas[ind]
-        else:
-            raise Exception(f"Index {ind} out of bounds: this event "
-                            f"has {len(self.saetas)} saetas.")
+    @property
+    def saetas_num(self) -> int:
+        """
+        Number of total saetas in event
 
-    def coords(self, ind: int):
-        return self.saeta(ind).coords
+        :return: Number of saetas.
+        """
+        return len(self.saetas)
+
+    @property
+    def hits_num(self) -> int:
+        """
+        Number of total hits in event
+
+        :return: Number of hits.
+        """
+        return len(self.hits)
+
+    @property
+    def hit_coords(self) -> np.array:
+        """
+        Hit coordinates
+
+        :return: Numpy array with all hits coordinates
+        """
+        hits = np.zeros((0, 4))
+        for hit in range(self.hits_num):
+            hits = np.vstack((hits, self.hits[hit].values))
+        return hits
+
+    @property
+    def hits(self) -> List[object]:
+        """
+        Hit objects
+
+        :return: List with all hit objects
+        """
+        return self._hits
 
     def print_saetas(self):
         for saeta in self.saetas:
             saeta.show()
 
     def print_hits(self, size="small"):
-        """
-        
-        """
-
         hits = np.zeros((NPLAN, NCY, NCX))
 
         for hit in self.hits:
@@ -80,10 +105,10 @@ class Event:
         if size == "big":
 
             e = ".---"  # Edge
-            c = "."     # Corner
+            c = "."  # Corner
             p = "|   "  # Void pad
             h = "| * "  # Hit pad
-            l = "|"     # Limit   
+            l = "|"  # Limit
 
             for plane in hits:
                 for row in plane:

@@ -2,15 +2,16 @@ from simulation.event_simulation import SimEvent
 # from reconstruction.saeta import Saeta
 
 sim = SimEvent()  # Generate event here, with inputs
-# sim.event.print_saetas()
-for ind in range(sim.event.multiplicity):
-    print(sim.event.coords(ind))
+print("Saetas:")
+for ind in range(sim.multiplicity):
+    print(sim.saetas[ind].vector)
 
-print("Hit Digits:")
-for hi in range(len(sim.event.hits)):
-    print(sim.event.hits[hi].values)
+print("Hits:")
+for hit in sim.hits:
+    print(hit.values)
 
-sim.event.print_hits(size="small")
+sim.print_saetas()
+sim.print_hits(size="small")
 
 # TODO: Me parece que el propio código me está
 #  pidiendo que SimEvent herede de Event, este

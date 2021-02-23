@@ -13,11 +13,12 @@ Miguel Cruces
 
 """
 from scipy import stats
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import Union
 
-from config.const import *
-from modules.utils import diag_matrix, for_recursive
+from utils.const import config, NDAC, NPAR, NPLAN, WX, WY, WT, WCX, WCY, VZ1, VSLP, VSLN, SIGX, SIGY, SIGT, VC, SC
+from utils.utilities import diag_matrix, for_recursive
 
 # ========================================================================== #
 # ======= I N I T I A L   V A L U E S --- C O N F I G U R A T I O N ======== #

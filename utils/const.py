@@ -6,7 +6,7 @@ from os.path import join as join_path
 CONF_DIR = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = join_path(CONF_DIR, "../")
 
-# /home/mcruces/Documents/GitHub/TRAGALDABAS-Kalman-Filter/config/configuration.json
+# /home/mcruces/Documents/GitHub/TRAGALDABAS-Kalman-Filter/utils/configuration.json
 # Read Configurations from configuration.json
 with open(join_path(CONF_DIR, "configuration.json"), "r") as config_file:
     config = json.load(config_file)

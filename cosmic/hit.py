@@ -9,7 +9,7 @@ H I T   C L A S S
 from typing import Union, List, Tuple
 import numpy as np
 
-from config.const import WCX, WCY
+from utils.const import WCX, WCY
 
 
 class Hit:

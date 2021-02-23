@@ -8,7 +8,7 @@ miguel.cruces.fernandez@gmail.com
 from typing import List, Union, Tuple
 import numpy as np
 
-from config.const import VZ1, WCX, WCY, DT
+from utils.const import VZ1, WCX, WCY, DT
 
 
 class Saeta:

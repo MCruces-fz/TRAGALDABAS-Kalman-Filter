@@ -35,7 +35,7 @@ wherever you want.
 First you must type on your Linux terminal
 ```bash
 cd TRAGALDABAS-Kalman-Filter
-source utils/utils.sh
+source utils/configure.sh
 ```
 to configure make files executables and so on. Then
 ```bash

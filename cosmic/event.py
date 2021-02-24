@@ -147,7 +147,7 @@ class Event:
                 for row in plane:
                     pad = ""
                     for hit in row:
-                        if hit:
+                        if hit:  # TODO: ' X ' if hit.detected else ' O '
                             pad += " X "
                         else:
                             pad += " . "

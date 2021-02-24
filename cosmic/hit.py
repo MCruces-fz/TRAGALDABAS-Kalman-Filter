@@ -70,42 +70,42 @@ class Hit:
     @property
     def trb_num(self):
         """
-        Check fired TRB
+        Check fired TRB (from 0 to NPLAN - 1)
         """
         return self._trb_num
 
     @trb_num.setter
     def trb_num(self, trb_num):
         """
-        Set fired TRB
+        Set fired TRB (from 0 to NPLAN - 1)
         """
         self._trb_num = trb_num
 
     @property
     def col(self):
         """
-        Check fired column
+        Check fired column (from 0 to NCOL - 1)
         """
         return self._col
 
     @col.setter
     def col(self, col):
         """
-        Set fired column
+        Set fired column (from 0 to NCOL - 1)
         """
         self._col = col
 
     @property
     def row(self):
         """
-        Check fired row
+        Check fired row (from 0 to NROW - 1)
         """
         return self._row
 
     @row.setter
     def row(self, row):
         """
-        Set fired row
+        Set fired row (from 0 to NROW - 1)
         """
         self._row = row
 

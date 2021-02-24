@@ -134,16 +134,16 @@ class Saeta:
 
         self._z0 += dz
 
-    @property
-    def digitized(self):
-        """
-        Digitize the hit of the saeta following the soze of the cells at current height z0.
+    # @property
+    # def digitized(self):
+    #     """
+    #     Digitize the hit of the saeta following the soze of the cells at current height z0.
 
-        :return: column and row of the cell in the detector and digitized time of the hit.
-        """
+    #     :return: column and row of the cell in the detector and digitized time of the hit.
+    #     """
 
-        col = np.int(self._x0 / WCX)
-        row = np.int(self._y0 / WCY)
-        time = np.int((self._t0 + DT / 2) / DT) * DT
+    #     col = np.int(self._x0 / WCX)
+    #     row = np.int(self._y0 / WCY)
+    #     time = np.int((self._t0 + DT / 2) / DT) * DT
 
-        return [col, row, time]
+    #     return [col, row, time]

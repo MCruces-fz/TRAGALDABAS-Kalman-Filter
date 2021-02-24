@@ -1,7 +1,7 @@
-from simulation.event_simulation import SimEvent
+from simulation.clunky_sim import SimClunkyEvent
 # from reconstruction.saeta import Saeta
 
-sim = SimEvent()  # Generate event here, with inputs
+sim = SimClunkyEvent()  # Generate event here, with inputs
 print("Saetas:")
 for saeta in sim.saetas:
     print(saeta.saeta)

@@ -7,7 +7,8 @@ E V E N T   C L A S S
 """
 
 from cosmic.saeta import Saeta
-from utils.const import NCX, NCY, NPLAN
+from cosmic.hit import Hit
+from utils.const import NPADX, NPADY, NPLAN
 
 from typing import List
 import numpy as np
@@ -16,10 +17,10 @@ import numpy as np
 class Event:
     def __init__(self):
 
-        self._saetas: List[object] = []
-        self._hits: List[object] = []
+        self._saetas: List[Saeta] = []
+        self._hits: List[Hit] = []
 
-    def add_saeta(self, saeta: object):
+    def add_saeta(self, saeta: Saeta):
         """
         Add a new saeta to the event
 
@@ -28,7 +29,7 @@ class Event:
 
         self._saetas.append(saeta)
 
-    def add_hit(self, hit: object, randomize: bool = True):
+    def add_hit(self, hit: Hit, randomize: bool = True):
         """
         Add a new hit to the event in random position at the list
 
@@ -54,7 +55,7 @@ class Event:
         return len(self._hits)
 
     @property
-    def saetas(self) -> List[object]:
+    def saetas(self) -> List[Saeta]:
         """
         Saeta objects
 
@@ -72,7 +73,7 @@ class Event:
         return len(self._saetas)
 
     @property
-    def hits(self) -> List[object]:
+    def hits(self) -> List[Hit]:
         """
         Hit objects
 
@@ -112,7 +113,7 @@ class Event:
         """
         Method to show friendly representation of hits in planes (ASCII).
         """
-        hits = np.zeros((NPLAN, NCY, NCX))
+        hits = np.zeros((NPLAN, NPADY, NPADX))
 
         for hit in self.hits:
             ip, col, row, time = hit.values

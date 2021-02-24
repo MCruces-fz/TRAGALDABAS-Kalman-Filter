@@ -12,7 +12,8 @@ from utils.const import VZ1, WCX, WCY, DT
 
 
 class Saeta:
-    def __init__(self, x0: float, xp: float, y0: float, yp: float, t0: float, s0: float, z0: Union[None, float] = None):
+    def __init__(self, x0: float, xp: float, y0: float, yp: float, t0: float, s0: float,
+                 z0: Union[None, float] = None, ):
         """
         Class Saeta:
 
@@ -140,14 +141,9 @@ class Saeta:
 
         :return: column and row of the cell in the detector and digitized time of the hit.
         """
-        # TODO: Ask Hans about that
 
         col = np.int(self._x0 / WCX)
         row = np.int(self._y0 / WCY)
         time = np.int((self._t0 + DT / 2) / DT) * DT
 
-        # col = np.int((self._x0 + WCX / 2) / WCX)
-        # row = np.int((self._y0 + WCY / 2) / WCY)
-        # time = np.int((self._t0 + DT / 2) / DT) * DT
-        
         return [col, row, time]

@@ -5,18 +5,18 @@ E F F I C I E N C Y   C L A S S
 @github: MCruces-fz
 @email: mcsquared.fz@gmail.com
 """
-from simulation.event_simulation import SimEvent
+from simulation.simulation import Simulate
 from cosmic.hit import Hit
-from utils.const import NPLAN, VZ1, NCX, NCY
+from utils.const import NPLAN, VZ1, NPADX, NPADY
 
 import numpy as np
 
 
-class Efficiency(SimEvent):
+class SimEvent(Simulate):
     def __init__(self):
         super().__init__()
 
-        self.map = np.zeros((NPLAN, NCY, NCX))  # Map of hit cells
+        self.map = np.zeros((NPLAN, NPADY, NPADX))  # Map of hit cells
 
     def digitization(self):
         """

@@ -1,4 +1,4 @@
-from simulation.efficiency import Efficiency
+from simulation.efficiency import SimEvent
 
-eff = Efficiency()
+eff = SimEvent()
 print(eff.map)

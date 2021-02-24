@@ -7,7 +7,7 @@ from cosmic.hit import Hit
 from utils.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
 
 
-class SimEvent(Event):
+class Simulate(Event):
     def __init__(self, tracks_number: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
@@ -124,7 +124,7 @@ class SimEvent(Event):
             x_mid = xz_end - (LENX / 2)
             y_mid = yz_end - (LENY / 2)
 
-            # We check if the particle has entered the detector
+            # Check if the particle has entered the detector
             if np.abs(x_mid) < (LENX / 2) and np.abs(y_mid) < (LENY / 2):
                 self.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0))
                 count_tracks += 1
@@ -135,25 +135,6 @@ class SimEvent(Event):
 
         Converts the analytic representation of the saeta:
             (X0, XP, Y0, YP, T0, S0)
-        to discrete values of position and time for each detector plane:
-            trb_num: ID of the TRB in the plane,
-            col: column of the cell in the plane,
-            row: row of the cell in the plane,
-            time: discretized time by the clock
+        to discrete values.
         """
-
-        for saeta in self.saetas:
-            for ip in range(NPLAN):
-                zi = VZ1[ip]  # current Z
-                dz = zi - saeta.z0
-
-                saeta.transport(dz)
-                xi, _, yi, _, ti, _ = saeta.vector
-
-                # Position indices of the impacted cells (cell index)
-                col, row, time = saeta.digitized
-
-                hit = Hit(ip, col, row, time)
-                self.add_hit(hit, randomize=True)
-
-            saeta.z0 = 0
+        pass

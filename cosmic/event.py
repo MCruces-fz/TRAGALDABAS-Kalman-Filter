@@ -16,7 +16,7 @@ import numpy as np
 class Event:
     def __init__(self):
 
-        self.saetas: List[object] = []
+        self._saetas: List[object] = []
         self._hits: List[object] = []
 
     def add_saeta(self, saeta: object):
@@ -26,7 +26,7 @@ class Event:
         :param saeta: Saeta object to add to the event
         """
 
-        self.saetas.append(saeta)
+        self._saetas.append(saeta)
 
     def add_hit(self, hit: object, randomize: bool = True):
         """
@@ -47,8 +47,20 @@ class Event:
             self.hits.append(hit)
 
     @property
-    def multiplicity(self):
-        return len(self.saetas)
+    def total_mult(self) -> int:
+        """
+        Total Multiplicity: This is The total number of hits in all the detector.
+        """
+        return len(self._hits)
+
+    @property
+    def saetas(self) -> List[object]:
+        """
+        Saeta objects
+
+        :return: List with all saeta objects
+        """
+        return self._saetas
 
     @property
     def saetas_num(self) -> int:
@@ -57,7 +69,16 @@ class Event:
 
         :return: Number of saetas.
         """
-        return len(self.saetas)
+        return len(self._saetas)
+
+    @property
+    def hits(self) -> List[object]:
+        """
+        Hit objects
+
+        :return: List with all hit objects
+        """
+        return self._hits
 
     @property
     def hits_num(self) -> int:
@@ -80,27 +101,22 @@ class Event:
             hits = np.vstack((hits, self.hits[hit].values))
         return hits
 
-    @property
-    def hits(self) -> List[object]:
+    def print_saetas(self):  # TODO: Do this better, in one line
         """
-        Hit objects
-
-        :return: List with all hit objects
+        Method to show friendly saeta vectors (ASCII).
         """
-        return self._hits
-
-    def print_saetas(self):
-        for saeta in self.saetas:
+        for saeta in self._saetas:
             saeta.show()
 
     def print_hits(self, size="small"):
+        """
+        Method to show friendly representation of hits in planes (ASCII).
+        """
         hits = np.zeros((NPLAN, NCY, NCX))
 
         for hit in self.hits:
             ip, col, row, time = hit.values
             hits[ip, row, col] += 1
-
-        # print(hits)
 
         if size == "big":
 

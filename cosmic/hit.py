@@ -73,13 +73,13 @@ class Hit:
     @property
     def x_pos(self):
         """
-        Position at X axis in milimeters from the origin
+        Position at X axis in millimeters from the origin
         """
         return self._x_pos
 
     @property
     def y_pos(self):
         """
-        Position at Y axis in milimeters from the origin
+        Position at Y axis in millimeters from the origin
         """
         return self._y_pos

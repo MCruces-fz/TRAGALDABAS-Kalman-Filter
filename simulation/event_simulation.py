@@ -11,11 +11,8 @@ class SimEvent(Event):
     def __init__(self, tracks_number: Union[int, None] = NTRACK):
         """ C L A S S - C O N S T R U C T O R
 
-        Args:
-            tracks_number (int, optional): Number of tracks to generate
-
-        Attributes:
-            self.tracks_number (int): Number of tracks generated across the detector.
+        :param tracks_number: (optional) Number of tracks to generate
+        :ivar self.tracks_number: Number of tracks generated across the detector.
         """
 
         super().__init__()
@@ -123,7 +120,7 @@ class SimEvent(Event):
             xz_end = X0 + XP * LENZ
             yz_end = Y0 + YP * LENZ
 
-            # We refer the coordinate to the detector center (x_mid, y_mid)
+            # Coordinate to the detector center (x_mid, y_mid)
             x_mid = xz_end - (LENX / 2)
             y_mid = yz_end - (LENY / 2)
 
@@ -134,26 +131,23 @@ class SimEvent(Event):
 
     def digitization(self):
         """
-        # ======== DIGITIZATION FOR TRAGALDABAS DETECTOR ======== #
+        # ============ DIGITIZATION FOR TRASGO DETECTOR ============ #
 
-        It converts the parameters inside mtgen to discrete
-        numerical values, which are the cell indices (hit_digits) and
-        cell central positions (hit_coords).
-
-        - hit_digits --> (kx1, ky2, time1, kx2, ky2, time2, ...)  Indices of impact
-        - hit_coords --> ( X1,  Y1,    T1,  X2,  Y2,    T2, ...)  Real points of impact / mm
-        :return: hit_digits (cell indices k_mat) and hit_coords (cell central
-            positions k_mat).
+        Converts the analytic representation of the saeta:
+            (X0, XP, Y0, YP, T0, S0)
+        to discrete values of position and time for each detector plane:
+            trb_num: ID of the TRB in the plane,
+            col: column of the cell in the plane,
+            row: row of the cell in the plane,
+            time: discretized time by the clock
         """
 
-        for it in range(self.multiplicity):
-            saeta = self.saetas[it]
-
+        for saeta in self.saetas:
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
+                dz = zi - saeta.z0
 
-                # Set saeta at height zi
-                saeta.z0 = zi
+                saeta.transport(dz)
                 xi, _, yi, _, ti, _ = saeta.vector
 
                 # Position indices of the impacted cells (cell index)
@@ -161,3 +155,5 @@ class SimEvent(Event):
 
                 hit = Hit(ip, col, row, time)
                 self.add_hit(hit, randomize=True)
+
+            saeta.z0 = 0

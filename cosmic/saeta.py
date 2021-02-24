@@ -18,12 +18,12 @@ class Saeta:
 
         Vector that describes the linear movement of cosmics rays.
 
-        :param x0:
-        :param xp:
-        :param y0:
-        :param yp:
-        :param t0:
-        :param s0:
+        :param x0: Position in X axis.
+        :param xp: Slope projected in the XZ plane.
+        :param y0: Position in Y axis.
+        :param yp: Slope projected in the YZ plane.
+        :param t0: Time in ns.
+        :param s0: Slowness (1/celerity).
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
 
@@ -48,6 +48,9 @@ class Saeta:
 
     @property
     def saeta(self) -> object:
+        """
+        Saeta getter: Vertical numpy array (vector)
+        """
         return self._saeta
 
     @saeta.setter
@@ -67,10 +70,16 @@ class Saeta:
 
     @property
     def vector(self) -> list:
+        """
+        Vector with all variables of the saeta in a list.
+        """
         vector = [self._x0, self._xp, self._y0, self._yp, self._t0, self._s0]
         return vector
 
     def show(self):
+        """
+        Friendly representation of the vertical saeta vector.
+        """
         print(f"|{self._x0: 7.1f} |\n"
               f"|{self._xp: 7.3f} |\n"
               f"|{self._y0: 7.1f} |\n"
@@ -80,6 +89,9 @@ class Saeta:
 
     @property
     def z0(self) -> float:
+        """
+        Getter for relative height (distance from top plane).
+        """
         return self._z0
 
     @z0.setter
@@ -100,15 +112,17 @@ class Saeta:
         
     def transport(self, dz: float):
         """
-            Possitive movement is from top plane to lower
+        Positive movement is from top plane to lower
 
-            Teniendo en cuenta la lentitud S0 y la inclinaciñon de esta saeta, esta función
-        debería poder transportar la saeta una distancia (z1 - z0).
+        Taking into account the slowness S0 and the inclination of this saeta, this
+        function transports the saeta a distance (z1 - z0).
 
-            El resultado debe de ser la misma saeta representada en un instante T1 tal que:
+        The result must be the same bolt represented at an instant T1 such that:
             T1 = T0 + S0 * (Z1 - Z0)
-        así como en unas posiciones X1 e Y1 dadas por las pendientes XP e YP y dicha distancia
-        (Z1 - Z0). La velocidad debería mantenerse constante
+        as well as in some positions X1 and Y1 given by the slopes XP and YP and
+        said distance (Z1 - Z0). Speed remains constant
+
+        :param dz: Amount of displacement.
         """
         x0 = self._x0 + self._xp * dz
         y0 = self._y0 + self._yp * dz

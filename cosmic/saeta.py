@@ -8,7 +8,10 @@ miguel.cruces.fernandez@gmail.com
 from typing import List, Union, Tuple
 import numpy as np
 
-from utils.const import VZ1, WCX, WCY, DT
+from utils.const import VZ1, WCX, WCY, DT, WX, WY, WT, VSLP, VSLN, NPAR
+from utils.utilities import diag_matrix
+
+# TODO: Add error matrix!!
 
 
 class Saeta:
@@ -28,6 +31,8 @@ class Saeta:
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
 
+        self._cov = None
+
         # Use the saeta setter
         self.saeta = (x0, xp, y0, yp, t0, s0)
 
@@ -46,6 +51,20 @@ class Saeta:
         if ks is None:
             raise ValueError("kz can't be None type")
         self._ks = ks
+
+    @property
+    def cov(self):
+        """
+        Move to KFSaeta
+        """
+        return self._cov
+        
+    @cov.setter
+    def cov(self, cov: np.array):
+        """
+        Move to KFSaeta
+        """
+        self._cov = cov
 
     @property
     def saeta(self) -> object:
@@ -68,6 +87,9 @@ class Saeta:
         self._saeta = np.array([[x0], [xp], [y0], [yp], [t0], [s0]])
 
         self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
+
+        self.cov = diag_matrix([1 / WX, 1 * VSLP, 1 / WY, 1 * VSLP, 1 / WT, 1 * VSLN])
+        # self._cov = diag_matrix([5 / WX, 50 * VSLP, 5 / WY, 50 * VSLP, 5 / WT, 10 * VSLN])
 
     @property
     def vector(self) -> list:
@@ -109,9 +131,9 @@ class Saeta:
             raise ValueError("z0 can't be None type")
 
         dz = z0 - self._z0
-        self.transport(dz)
+        self.displace(dz)
         
-    def transport(self, dz: float):
+    def displace(self, dz: float):
         """
         Positive movement is from top plane to lower
 
@@ -133,6 +155,26 @@ class Saeta:
         self.saeta = (x0, self._xp, y0, self._yp, t0, self._s0)
 
         self._z0 += dz
+
+    def transport(self, dz: float):
+        """
+        Displace the saeta and its covariance matrix.
+
+        Move to KFSaeta
+        """
+        self.displace(dz)
+
+        transport_matrix = diag_matrix([1] * NPAR)  # Identity 6x6
+        transport_matrix[0, 1] = dz
+        transport_matrix[2, 3] = dz
+        transport_matrix[4, 5] = self.ks * dz  # - ks * dz
+
+        self.cov = transport_matrix @ self.cov @ transport_matrix
+        # FIXME: self.cov mustn't be in self.saeta setter
+
+
+
+
 
     # @property
     # def digitized(self):

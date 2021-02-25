@@ -45,7 +45,7 @@ class SimClunkyEvent(Simulate):
                 zi = VZ1[ip]  # current Z
                 dz = zi - saeta.z0
 
-                saeta.transport(dz)
+                saeta.displace(dz)
 
                 # Position indices of the impacted cells (cell index)
                 col, row, time = self.fired_cell(saeta)

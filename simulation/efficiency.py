@@ -75,7 +75,7 @@ class SimEvent(Simulate):
                 zi = VZ1[ip]  # current Z
                 dz = zi - saeta.z0
 
-                saeta.transport(dz)
+                saeta.displace(dz)
                 xi, _, yi, _, ti, _ = saeta.vector
 
                 # print(xi, yi)

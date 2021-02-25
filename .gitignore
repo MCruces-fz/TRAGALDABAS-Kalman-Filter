@@ -15,6 +15,7 @@ all_bins_*
 *.dat
 .idea/
 unity_input_*
+session.vim
 
 # Distribution / packaging
 .Python

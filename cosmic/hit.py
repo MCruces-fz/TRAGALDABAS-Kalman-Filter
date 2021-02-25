@@ -27,6 +27,7 @@ class Hit:
         self._y_pos = self.row * WCY + WCY / 2
 
         self._detected = True
+        self._used = 0
 
     @property
     def detected(self):
@@ -41,6 +42,20 @@ class Hit:
         Set Hit as detected (True) or not (False)
         """
         self._detected = status
+
+    @property
+    def used(self):
+        """
+        Check how many times Hit was used
+        """
+        return self._used
+
+    def use(self):
+        """
+        Set Hit as used one more time
+        """
+        # TODO: Use probability in function of chi2
+        self._used += 1
 
     @property
     def values(self):

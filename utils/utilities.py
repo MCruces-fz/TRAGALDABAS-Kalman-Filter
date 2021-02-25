@@ -86,7 +86,7 @@ def empty(shape: list) -> list:
     return [copy.deepcopy(sublist) for i in range(items)]
 
 
-def diag_matrix(dim: int, diag: list or object):
+def diag_matrix(diag: Union[list, np.array]):
     """
     Create squared k_mat of dimXdim dimension with diag in the diagonal.
 
@@ -94,6 +94,7 @@ def diag_matrix(dim: int, diag: list or object):
     :param diag: String of length dim with the diagonal values.
     :return: Squared k_mat of dimXdim dimension with diag in the diagonal.
     """
+    dim = len(diag)
     arr = np.zeros([dim, dim])
     row, col = np.diag_indices(arr.shape[0])
     arr[row, col] = np.asarray(diag)

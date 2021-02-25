@@ -39,10 +39,10 @@ class Event:
         """
 
         if randomize:
-            if not len(self.hits):
+            if not self.total_mult:
                 rd_pos = 0
             else:
-                rd_pos = np.random.randint(0, len(self.hits))
+                rd_pos = np.random.randint(0, len(self.hits) + 1)
             self.hits.insert(rd_pos, hit)
         else:
             self.hits.append(hit)
@@ -117,7 +117,8 @@ class Event:
 
         for hit in self.hits:
             ip, col, row, time = hit.values
-            hits[ip, row, col] += 1
+            if hit.detected:
+                hits[ip, row, col] += 1
 
         if size == "big":
 
@@ -147,8 +148,10 @@ class Event:
                 for row in plane:
                     pad = ""
                     for hit in row:
-                        if hit:  # TODO: ' X ' if hit.detected else ' O '
+                        if hit == 1:  # TODO: ' X ' if hit.detected else ' O '
                             pad += " X "
+                        elif hit >= 2:
+                            pad += " Y "
                         else:
                             pad += " . "
                     print(pad)

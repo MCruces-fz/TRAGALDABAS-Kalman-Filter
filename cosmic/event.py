@@ -29,7 +29,7 @@ class Event:
 
         self._saetas.append(saeta)
 
-    def add_hit(self, hit: Hit, randomize: bool = True):
+    def add_hit(self, hit: Hit, randomize: bool = False):
         """
         Add a new hit to the event in random position at the list
 

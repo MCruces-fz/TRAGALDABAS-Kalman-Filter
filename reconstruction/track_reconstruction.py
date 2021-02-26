@@ -1,7 +1,7 @@
 from simulation.efficiency import SimEvent
 from simulation.clunky_sim import SimClunkyEvent
 from cosmic.event import Event
-from cosmic.saeta import Saeta
+from reconstruction.kf_saeta import KFSaeta
 from utils.const import NPLAN, SC, VZ1
 
 from typing import Union
@@ -20,6 +20,7 @@ class TrackFinding:
         Applies Kalman Filter method (for a combination of given hits, but not yet)
 
         """
+        hit_k = None
         for k, hit in enumerate(self.event.hits):
             if hit.trb_num != 3 or hit.used: continue
             hit_k = k
@@ -32,19 +33,26 @@ class TrackFinding:
         x0 = hit.x_pos
         y0 = hit.y_pos
         t0 = hit.time
-        saeta = Saeta(x0, 0, y0, 0, t0, SC, z0=VZ1[-1])  # Initial covariance set automatically
+        saeta = KFSaeta(x0, 0, y0, 0, t0, SC, z0=VZ1[-1])  # Initial covariance set automatically
         # TODO: Add Number of hits used to KFSaeta
 
+        # Step 2. - PREDICTION
         print(f"Height: {saeta.z0}")
         saeta.show()
-        print(saeta.cov)
-        
+        saeta.show_cov()
+
         dz = VZ1[-2] - VZ1[-1]  # Must be negative
         print("Displacement: ", dz)
         saeta.transport(dz)
         print(f"Height: {saeta.z0}")
         saeta.show()
-        print(saeta.cov)
+        saeta.show_cov()
+
+        # Step 3. - PROCESS NOISE [UNUSED YET]
+        # ...
+
+        # Step 4. - FILTRATION
+        # ...
 
     def takes_all(self):
         """

@@ -16,11 +16,11 @@ from utils.utilities import diag_matrix
 
 class Saeta:
     def __init__(self, x0: float, xp: float, y0: float, yp: float, t0: float, s0: float,
-                 z0: Union[None, float] = None, ):
+                 z0: Union[None, float] = None):
         """
         Class Saeta:
 
-        Vector that describes the linear movement of cosmics rays.
+        Vector that describes the linear movement of cosmic rays.
 
         :param x0: Position in X axis.
         :param xp: Slope projected in the XZ plane.
@@ -30,8 +30,6 @@ class Saeta:
         :param s0: Slowness (1/celerity).
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
-
-        self._cov = None
 
         # Use the saeta setter
         self.saeta = (x0, xp, y0, yp, t0, s0)
@@ -53,20 +51,6 @@ class Saeta:
         self._ks = ks
 
     @property
-    def cov(self):
-        """
-        Move to KFSaeta
-        """
-        return self._cov
-        
-    @cov.setter
-    def cov(self, cov: np.array):
-        """
-        Move to KFSaeta
-        """
-        self._cov = cov
-
-    @property
     def saeta(self) -> object:
         """
         Saeta getter: Vertical numpy array (vector)
@@ -75,6 +59,9 @@ class Saeta:
 
     @saeta.setter
     def saeta(self, values: Union[List[float], Tuple[float]]):
+        """
+        Setting saeta, z0 keep being the same as before
+        """
         x0, xp, y0, yp, t0, s0 = values
 
         self._x0 = x0
@@ -87,9 +74,6 @@ class Saeta:
         self._saeta = np.array([[x0], [xp], [y0], [yp], [t0], [s0]])
 
         self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
-
-        self.cov = diag_matrix([1 / WX, 1 * VSLP, 1 / WY, 1 * VSLP, 1 / WT, 1 * VSLN])
-        # self._cov = diag_matrix([5 / WX, 50 * VSLP, 5 / WY, 50 * VSLP, 5 / WT, 10 * VSLN])
 
     @property
     def vector(self) -> list:
@@ -155,23 +139,6 @@ class Saeta:
         self.saeta = (x0, self._xp, y0, self._yp, t0, self._s0)
 
         self._z0 += dz
-
-    def transport(self, dz: float):
-        """
-        Displace the saeta and its covariance matrix.
-
-        Move to KFSaeta
-        """
-        self.displace(dz)
-
-        transport_matrix = diag_matrix([1] * NPAR)  # Identity 6x6
-        transport_matrix[0, 1] = dz
-        transport_matrix[2, 3] = dz
-        transport_matrix[4, 5] = self.ks * dz  # - ks * dz
-
-        self.cov = transport_matrix @ self.cov @ transport_matrix
-        # FIXME: self.cov mustn't be in self.saeta setter
-
 
 
 

@@ -1,5 +1,5 @@
 from simulation.clunky_sim import SimClunkyEvent
-from reconstruction.reco_saeta import TrackFinding
+from reconstruction.track_reconstruction import TrackFinding
 # from reconstruction.saeta import Saeta
 
 sim = SimClunkyEvent()  # Generate event here, with inputs

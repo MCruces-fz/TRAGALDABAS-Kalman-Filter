@@ -248,7 +248,7 @@ class TrackFinding:
         :param dz: Distance between planes
         :return: Transport function (k_mat | Numpy array)
         """
-        F = diag_matrix(NPAR, [1] * NPAR)  # Identity 6x6
+        F = diag_matrix([1] * NPAR)  # Identity 6x6
         F[0, 1] = dz
         F[2, 3] = dz
         F[4, 5] = ks * dz  # - ks * dz

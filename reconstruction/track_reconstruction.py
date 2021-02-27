@@ -2,10 +2,12 @@ from simulation.efficiency import SimEvent
 from simulation.clunky_sim import SimClunkyEvent
 from cosmic.event import Event
 from reconstruction.kf_saeta import KFSaeta
-from utils.const import NPLAN, SC, VZ1, VZ0
+from utils.const import NPLAN, SC, VZ1, VZ0, NDAC, NPAR
+from utils.utilities import identity_2d
 
-from typing import Union
+from typing import Union, List
 import numpy as np
+from numpy.linalg import inv
 
 
 class TrackFinding:
@@ -15,13 +17,20 @@ class TrackFinding:
 
         self.loop()
 
+        print("The generated saetas:")
+        self.event.print_saetas()
+
+        print("")
+        print("Reconstructed saetas:")
+        self.rec_evt.print_saetas()
+
+
     def kalman_filter(self, ind_hits):
         """
         Applies Kalman Filter method (for a combination of given hits, but not yet)
 
         """
         # TODO: Hacerlo como antes, sim implementar novedades todavía!!
-        print(f"Combination: {ind_hits}")
 
         hit = self.event.hits[ind_hits[0]]
         # Step 1. - INITIALIZATION (Hypothesis)
@@ -34,29 +43,39 @@ class TrackFinding:
         for ip, ih in enumerate(ind_hits[1:]):
             # Plane index, hit index
 
-            hit = self.event.hits[ih]
-
             # Step 2. - PREDICTION
-            print(f"Height: {saeta.z0}")
-            saeta.show()
-            saeta.show_cov()
-
             dz = VZ1[- ip - 2] - VZ1[- ip - 1]  # Must be negative
-            print("Displacement: ", dz)
             saeta.transport(dz)
-            print(f"Height: {saeta.z0}")
-            saeta.show()
-            saeta.show_cov()
 
             # Step 3. - PROCESS NOISE [UNUSED YET]
             # ...
 
             # Step 4. - FILTRATION
-            # ...
+            hit = self.event.hits[ih]
 
+            # H -> model measurement: Identity of size 3x6
+            H = identity_2d(NDAC, NPAR)
+
+            # K -> Gain matrix: equation
+            # m -> measurement: hit.measurement
+            # V -> measurement covariance matrix: hit.cov
+            K = saeta.cov  @ H.T @ inv(hit.cov + H @ saeta.cov @ H.T)
+
+            # New Saeta
+            # TODO: Change attribute names: vector -> list & saeta -> vector
+            saeta.saeta = saeta.saeta + K @ (hit.measurement - H @ saeta.saeta)
+            saeta.cov = (identity_2d(NPAR, NPAR) - K @ H) @ saeta.cov
+
+            # Claculate chi2 and add to KFSaeta class as attribute
             self.event.hits[ih].use()
 
+        self.rec_evt.add_saeta(saeta)
+
     def loop(self):
+        """
+        Gives to kalman_filter method all combinations of hits, one by one.
+        Sorted from lower to upper plane.
+        """
 
         n_hits = self.event.total_mult
         for i in range(n_hits):

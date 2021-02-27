@@ -51,19 +51,20 @@ class KFSaeta(Saeta):
         else:
             self.cov = diag_matrix([5 / WX, 50 * VSLP, 5 / WY, 50 * VSLP, 5 / WT, 10 * VSLN])
 
-    @property
-    def saeta(self):
-        return super()._saeta
-
-    @saeta.setter
-    def saeta(self, values):
-        if len(values) == 6:
-            super(KFSaeta, type(self)).saeta.fset(self, values)
-        elif len(values) == 7:
-            x0, xp, y0, yp, t0, s0, z0 = values
-            super(KFSaeta, type(self)).saeta.fset(self, [x0, xp, y0, yp, t0, s0])
-
-            self.z0 = z0
+#     @property
+#     def saeta(self):
+#         # return super().saeta
+#         return property(Saeta.saeta.__get__)
+# 
+#     @saeta.setter
+#     def saeta(self, values):
+#         if len(values) == 6:
+#             super(KFSaeta, type(self)).saeta.fset(self, values)
+#         elif len(values) == 7:
+#             x0, xp, y0, yp, t0, s0, z0 = values
+#             super(KFSaeta, type(self)).saeta.fset(self, [x0, xp, y0, yp, t0, s0])
+# 
+#             self.z0 = z0
 
     def transport(self, dz: float):
         """

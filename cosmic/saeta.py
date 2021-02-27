@@ -32,7 +32,7 @@ class Saeta:
         """
 
         # Use the saeta setter
-        self.saeta = (x0, xp, y0, yp, t0, s0)
+        self.vector = (x0, xp, y0, yp, t0, s0)
 
         if z0 is None:
             # Initialized at the top plane
@@ -58,11 +58,12 @@ class Saeta:
         return self._saeta
 
     @saeta.setter
-    def saeta(self, values: Union[List[float], Tuple[float]]):
+    def saeta(self, vector: np.array):
         """
         Setting saeta, z0 keep being the same as before
         """
-        x0, xp, y0, yp, t0, s0 = values
+        if vector.shape == (6, 1):
+            x0, xp, y0, yp, t0, s0 = vector[:, 0]
 
         self._x0 = x0
         self._xp = xp
@@ -76,12 +77,32 @@ class Saeta:
         self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
 
     @property
-    def vector(self) -> list:
+    def vector(self) -> List[float]:
         """
         Vector with all variables of the saeta in a list.
         """
         vector = [self._x0, self._xp, self._y0, self._yp, self._t0, self._s0]
         return vector
+
+    @vector.setter
+    def vector(self, values: Union[List[float], Tuple[float]]):
+        if len(values) == 6:
+            x0, xp, y0, yp, t0, s0 = values
+        elif len(values) == 7:
+            x0, xp, y0, yp, t0, s0, z0 = values
+
+            self.z0 = z0
+
+        self._x0 = x0
+        self._xp = xp
+        self._y0 = y0
+        self._yp = yp
+        self._t0 = t0
+        self._s0 = s0
+
+        self._saeta = np.array([[x0], [xp], [y0], [yp], [t0], [s0]])
+
+        self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
 
     def show(self):
         """
@@ -136,7 +157,7 @@ class Saeta:
 
         t0 = self._t0 + self._s0 * self._ks * dz
 
-        self.saeta = (x0, self._xp, y0, self._yp, t0, self._s0)
+        self.vector = (x0, self._xp, y0, self._yp, t0, self._s0)
 
         self._z0 += dz
 

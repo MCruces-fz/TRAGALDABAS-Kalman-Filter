@@ -9,7 +9,8 @@ H I T   C L A S S
 from typing import Union, List, Tuple
 import numpy as np
 
-from utils.const import WCX, WCY
+from utils.const import WCX, WCY, SIGX, SIGY, SIGT
+from utils.utilities import diag_matrix
 
 
 class Hit:
@@ -25,6 +26,8 @@ class Hit:
         # FIXME: This is Clunky
         self._x_pos = self.col * WCX + WCX / 2
         self._y_pos = self.row * WCY + WCY / 2
+
+        self._measurement = np.array([[self.x_pos], [self.y_pos], [self.time]])
 
         self._detected = True
         self._used = 0
@@ -151,3 +154,17 @@ class Hit:
         Position at Y axis in millimeters from the origin
         """
         return self._y_pos
+
+    @property
+    def measurement(self):
+        """
+        Move to KFHit
+        """
+        return self._measurement
+
+    @property
+    def cov(self):
+        """
+        Move to KFHit
+        """
+        return diag_matrix([SIGX**2, SIGY**2, SIGT**2])

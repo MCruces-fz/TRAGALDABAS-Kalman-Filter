@@ -100,6 +100,28 @@ def diag_matrix(diag: Union[list, np.array]):
     arr[row, col] = np.asarray(diag)
     return arr
 
+def identity_2d(n_rows: int, n_cols: int) -> np.array:
+    """
+    Create a n_rows x n_cols identity matrix
+
+    :return: Numpy array of n_rows x n_cols dimension with ones at diagonal.
+    """
+    ident = np.zeros([n_rows, n_cols])
+    if 2 * n_rows == n_cols:
+        rows = range(n_rows)
+        cols = range(0, n_cols, 2)
+    elif n_rows == 2 * n_cols:
+        rows = range(0, n_rows, 2)
+        cols = range(n_cols)
+    elif n_rows == n_cols:
+        rows = range(n_rows)
+        cols = range(n_cols)
+    else:
+        raise Exception("Error in n_cols and n_rows")
+
+    ident[rows, cols] = 1
+    return ident
+
 
 def print_saetas(saetas_array):
     """

@@ -53,6 +53,18 @@ class Simulate(Event):
             return TINI
 
     @staticmethod
+    def set_S0(s_random: bool = True):
+        """
+        Defines initial value for initial slowness of each saeta:
+
+        :param s_random: Choose if set S0 randomly or equal to SINI
+        """
+        if s_random:
+            return (1 - np.random.random() / 2) * SINI
+        else:
+            return SINI
+
+    @staticmethod
     def angle_distribution(th_max: float, azimuthal: str = "uniform", zenithal: str = "uniform"):
         """
         Generates random 3D polar angles (theta and phi)
@@ -107,7 +119,7 @@ class Simulate(Event):
             X0 = np.random.random() * LENX
             Y0 = np.random.random() * LENY
             T0 = self.set_T0()
-            S0 = SINI
+            S0 = self.set_S0(s_random=False)
 
             # Director Cosines
             cx = np.sin(theta) * np.cos(phi)

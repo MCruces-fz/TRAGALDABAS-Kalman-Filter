@@ -1,8 +1,9 @@
 from cosmic.saeta import Saeta
+from cosmic.hit import Hit
 from utils.utilities import diag_matrix
-from utils.const import WX, WY, WT, VSLP, VSLN, NPAR
+from utils.const import WX, WY, WT, VSLP, VSLN, NPAR, VZ1, SIGX, SIGY, SIGT
 
-from typing import Union
+from typing import Union, List
 import numpy as np
 
 
@@ -22,11 +23,24 @@ class KFSaeta(Saeta):
         :param s0: Slowness (1/celerity).
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
+
+        self._hits: List[Hit] = []
         self._cov = None
+        self._chi2 = None
 
         super().__init__(x0, xp, y0, yp, t0, s0, z0=z0)
 
         self.reset_cov()
+
+    @property
+    def hits(self):
+        return self._hits
+
+    def add_hit(self, hit: Hit):
+        """
+        Add the new hit used
+        """
+        self._hits.append(hit)
 
     @property
     def cov(self):
@@ -80,6 +94,27 @@ class KFSaeta(Saeta):
         transport_matrix[4, 5] = self.ks * dz  # - ks * dz
 
         self.cov = transport_matrix @ self.cov @ transport_matrix.T
+
+    def set_chi2(self):
+        zc = self.z0
+        chi2 = 0
+        for hit in self.hits:
+            ip, _, _, tt = hit.values
+            xt, yt = hit.x_pos, hit.y_pos
+            self.z0 = VZ1[ip]
+            x0, _, y0, _, t0, _ = self.vector
+            chi2 += (x0 -xt)**2 / SIGX**2 + (y0 -yt)**2 / SIGY**2 + (t0 -tt)**2 / SIGT**2 
+        self.chi2 = chi2
+        self.z0 = zc
+
+    @property
+    def chi2(self):
+        self.set_chi2()
+        return self._chi2
+
+    @chi2.setter
+    def chi2(self, chi2):
+        self._chi2 = chi2
 
     def show_cov(self):
         """

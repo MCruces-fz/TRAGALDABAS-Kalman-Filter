@@ -3,10 +3,10 @@ from simulation.clunky_sim import SimClunkyEvent
 from cosmic.event import Event
 from cosmic.hit import Hit
 from reconstruction.kf_saeta import KFSaeta
-from utils.const import NPLAN, SC, VZ1, VZ0, NDAC, NPAR, VC
+from utils.const import SC, VZ1, NDAC, NPAR, VC
 from utils.utilities import identity_2d
 
-from typing import Union, List
+from typing import Union
 import numpy as np
 from numpy.linalg import inv
 from scipy import stats
@@ -14,15 +14,15 @@ from scipy import stats
 
 class TrackFinding:
     def __init__(self, event: Union[Event, SimEvent, SimClunkyEvent]):
-        self.event = event
+        self.sim_evt = event
         self.rec_evt = Event()
 
         self.loop()
 
         print("Generated saetas:")
-        # self.event.print_saetas()
-        for s in range(len(self.event.saetas)):
-            saeta = self.event.saetas[s]
+        # self.sim_evt.print_saetas()
+        for s in range(len(self.sim_evt.saetas)):
+            saeta = self.sim_evt.saetas[s]
             saeta.show()
 
         print("")
@@ -34,8 +34,7 @@ class TrackFinding:
             print(f"Chi2: {saeta.chi2}")
             for hit in saeta.hits:
                 print(hit.values)
-
-
+            print("")
 
     def kalman_filter(self, ind_hits):
         """
@@ -44,7 +43,7 @@ class TrackFinding:
         """
         # TODO: Hacerlo como antes, sim implementar novedades todavía!!
 
-        hit = self.event.hits[ind_hits[0]]
+        hit = self.sim_evt.hits[ind_hits[0]]
         # Step 1. - INITIALIZATION (Hypothesis)
         x0 = hit.x_pos
         y0 = hit.y_pos
@@ -68,7 +67,7 @@ class TrackFinding:
             # ...
 
             # Step 4. - FILTRATION
-            hit = self.event.hits[ih]
+            hit = self.sim_evt.hits[ih]
 
             # K -> Gain matrix: equation
             # m -> measurement: hit.measurement
@@ -86,14 +85,15 @@ class TrackFinding:
             dcut = 0.01
             print(f"cutf: {cutf}")
             if cutf > dcut:
-                self.event.hits[ih].use()
+                self.sim_evt.hits[ih].use()
                 if len(ind_hits) - 2 == ip:  # At last loop add saeta
                     self.rec_evt.add_saeta(saeta)
             else:
                 print(f"Broken with chi2: {saeta.chi2}")
                 break
 
-    def cut(self, saeta: KFSaeta) -> float:
+    @staticmethod
+    def cut(saeta: KFSaeta) -> float:
         """
         Function that returns quality factor by the first method
 
@@ -134,47 +134,25 @@ class TrackFinding:
         Sorted from lower to upper plane.
         """
 
-        n_hits = self.event.total_mult
+        n_hits = self.sim_evt.total_mult
 
         for i in range(n_hits):
-            hit4 = self.event.hits[i]
+            hit4 = self.sim_evt.hits[i]
             if hit4.trb_num != 3: continue
 
             for j in range(n_hits):
-                hit3 = self.event.hits[j]
+                hit3 = self.sim_evt.hits[j]
                 if hit3.trb_num != 2: continue
                 if self.speed_calc(hit4, hit3) > VC + 0.15: continue
 
                 for k in range(n_hits):
-                    hit2 = self.event.hits[k]
+                    hit2 = self.sim_evt.hits[k]
                     if hit2.trb_num != 1: continue
                     if self.speed_calc(hit3, hit2) > VC + 0.15: continue
 
                     for m in range(n_hits):
-                        hit1 = self.event.hits[m]
+                        hit1 = self.sim_evt.hits[m]
                         if hit1.trb_num != 0: continue
                         if self.speed_calc(hit2, hit1) > VC + 0.15: continue
 
                         self.kalman_filter([i, j, k, m])
-
-    def takes_all(self):
-        """
-        This is a mess, but I didn't want to delete it yet.
-
-        """
-        print("Total multiplicity: ", self.event.total_mult)
-
-        missing = True
-        while missing:
-            using = []
-            for ip in range(NPLAN):
-                for k, hit in enumerate(self.event.hits):
-                    if hit.trb_num != ip or hit.used:
-                        continue
-                    using.append(k)
-                    hit.use()
-                    break
-            print("using: ", using)
-
-            useds = np.array([hit.used for hit in self.event.hits])
-            missing = np.any(useds == False)

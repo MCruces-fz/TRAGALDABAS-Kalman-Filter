@@ -4,7 +4,7 @@ from typing import Union, List
 from simulation.simulation import Simulate
 from cosmic.saeta import Saeta
 from cosmic.hit import Hit
-from utils.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX, WCX, WCY, DT
+from utils.const import NTRACK, NPLAN, VZ1, WCX, WCY, DT
 
 
 class SimClunkyEvent(Simulate):
@@ -40,7 +40,7 @@ class SimClunkyEvent(Simulate):
             time: discretized time by the clock
         """
 
-        for saeta in self.saetas:
+        for sid, saeta in enumerate(self.saetas):
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
                 dz = zi - saeta.z0
@@ -52,5 +52,5 @@ class SimClunkyEvent(Simulate):
 
                 hit = Hit(ip, col, row, time)
                 self.add_hit(hit, randomize=True)
-
+                self.saetas[sid].add_hit(hit)
             saeta.z0 = 0

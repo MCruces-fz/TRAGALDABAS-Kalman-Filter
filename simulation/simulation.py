@@ -1,10 +1,10 @@
 import numpy as np
-from typing import Union, List
+from typing import Union
 
 from cosmic.event import Event
 from cosmic.saeta import Saeta
-from cosmic.hit import Hit
-from utils.const import NTRACK, NPLAN, LENX, LENY, LENZ, VZ1, TINI, SINI, THMAX
+# from cosmic.hit import Hit
+from utils.const import NTRACK, LENX, LENY, LENZ, TINI, SINI, THMAX
 
 
 class Simulate(Event):

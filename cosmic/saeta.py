@@ -8,6 +8,7 @@ miguel.cruces.fernandez@gmail.com
 from typing import List, Union, Tuple
 import numpy as np
 
+from cosmic.hit import Hit
 from utils.const import VZ1, WCX, WCY, DT, WX, WY, WT, VSLP, VSLN, NPAR
 from utils.utilities import diag_matrix
 
@@ -31,6 +32,8 @@ class Saeta:
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
 
+        self._hits: List[Hit] = []
+
         # Use the saeta setter
         self.vector = (x0, xp, y0, yp, t0, s0)
 
@@ -51,7 +54,17 @@ class Saeta:
         self._ks = ks
 
     @property
-    def saeta(self) -> object:
+    def hits(self):
+        return self._hits
+
+    def add_hit(self, hit: Hit):
+        """
+        Add the new hit used
+        """
+        self._hits.append(hit)
+
+    @property
+    def saeta(self) -> np.array:
         """
         Saeta getter: Vertical numpy array (vector)
         """
@@ -64,17 +77,10 @@ class Saeta:
         """
         if vector.shape == (6, 1):
             x0, xp, y0, yp, t0, s0 = vector[:, 0]
+        else:
+            raise Exception("vector shape must be (6, 1)")
 
-        self._x0 = x0
-        self._xp = xp
-        self._y0 = y0
-        self._yp = yp
-        self._t0 = t0
-        self._s0 = s0
-
-        self._saeta = np.array([[x0], [xp], [y0], [yp], [t0], [s0]])
-
-        self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
+        self.vector = (x0, xp, y0, yp, t0, s0)
 
     @property
     def vector(self) -> List[float]:
@@ -92,6 +98,8 @@ class Saeta:
             x0, xp, y0, yp, t0, s0, z0 = values
 
             self.z0 = z0
+        else:
+            raise Exception("There must be 6 or 7 inputs only")
 
         self._x0 = x0
         self._xp = xp

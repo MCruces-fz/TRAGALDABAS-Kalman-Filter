@@ -8,19 +8,20 @@ E V E N T   C L A S S
 
 from cosmic.saeta import Saeta
 from cosmic.hit import Hit
+from reconstruction.kf_saeta import KFSaeta
 from utils.const import NPADX, NPADY, NPLAN
 
-from typing import List
+from typing import List, Union
 import numpy as np
 
 
 class Event:
     def __init__(self):
 
-        self._saetas: List[Saeta] = []
+        self._saetas: Union[List[Saeta], List[KFSaeta]] = []
         self._hits: List[Hit] = []
 
-    def add_saeta(self, saeta: Saeta):
+    def add_saeta(self, saeta: Union[Saeta, KFSaeta]):
         """
         Add a new saeta to the event
 
@@ -55,7 +56,7 @@ class Event:
         return len(self._hits)
 
     @property
-    def saetas(self) -> List[Saeta]:
+    def saetas(self) -> Union[List[Saeta], List[KFSaeta]]:
         """
         Saeta objects
 

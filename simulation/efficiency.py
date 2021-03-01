@@ -7,7 +7,7 @@ E F F I C I E N C Y   C L A S S
 """
 from simulation.simulation import Simulate
 from cosmic.hit import Hit
-from cosmic.saeta import Saeta
+# from cosmic.saeta import Saeta
 from utils.const import NPLAN, VZ1, NPADX, NPADY, DT, PITCHX, PITCHY, WPADX, WPADY, EDGEX, EDGEY, SEP
 
 from typing import List
@@ -70,7 +70,7 @@ class SimEvent(Simulate):
             time: discretized time by the clock
         """
 
-        for saeta in self.saetas:
+        for sid, saeta in enumerate(self.saetas):
             for ip in range(NPLAN):
                 zi = VZ1[ip]  # current Z
                 dz = zi - saeta.z0
@@ -93,5 +93,6 @@ class SimEvent(Simulate):
                 hit.detected = accept_x and accept_y
 
                 self.add_hit(hit, randomize=True)
-
+                self.saetas[sid].add_hit(hit)
             saeta.z0 = 0
+

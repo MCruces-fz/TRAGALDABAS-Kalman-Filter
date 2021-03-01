@@ -24,23 +24,12 @@ class KFSaeta(Saeta):
         :param z0: (optional) Position in relative Z axis (by default is zero)
         """
 
-        self._hits: List[Hit] = []
         self._cov = None
         self._chi2 = None
 
         super().__init__(x0, xp, y0, yp, t0, s0, z0=z0)
 
         self.reset_cov()
-
-    @property
-    def hits(self):
-        return self._hits
-
-    def add_hit(self, hit: Hit):
-        """
-        Add the new hit used
-        """
-        self._hits.append(hit)
 
     @property
     def cov(self):
@@ -103,7 +92,7 @@ class KFSaeta(Saeta):
             xt, yt = hit.x_pos, hit.y_pos
             self.z0 = VZ1[ip]
             x0, _, y0, _, t0, _ = self.vector
-            chi2 += (x0 -xt)**2 / SIGX**2 + (y0 -yt)**2 / SIGY**2 + (t0 -tt)**2 / SIGT**2 
+            chi2 += (x0 - xt)**2 / SIGX**2 + (y0 - yt)**2 / SIGY**2 + (t0 - tt)**2 / SIGT**2
         self.chi2 = chi2
         self.z0 = zc
 

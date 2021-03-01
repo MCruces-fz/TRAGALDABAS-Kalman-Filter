@@ -1,6 +1,7 @@
 from simulation.clunky_sim import SimClunkyEvent
 from reconstruction.track_reconstruction import TrackFinding
 # from reconstruction.saeta import Saeta
+from represent.represent_3d import Represent3D as r3d
 
 sim = SimClunkyEvent()  # Generate event here, with inputs
 
@@ -11,6 +12,13 @@ for hit in sim.hits:
 print("")
 
 find = TrackFinding(sim)
+
+represent = r3d(find.sim_evt, find.rec_evt)
+# r3d.saetas(find.sim_evt)
+# r3d.saetas(find.rec_evt)
+# r3d.hits(find.sim_evt)
+# r3d.lines(find.sim_evt)
+# r3d.show()
 
 
 # print("Saetas:")

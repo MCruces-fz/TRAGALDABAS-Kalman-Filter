@@ -54,7 +54,7 @@ class Represent3D:
 
     @classmethod
     def saetas(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
-               plt_title=None, lbl: str = 'Saeta', grids: bool = False, frmt_color: str = "blue",
+               plt_title=None, lbl: str = 'Saeta', grids: bool = False, frmt_color: str = None,
                frmt_marker: str = "--", ax: object = None):
         """
         Config Function for plot any set of saetas (Saeta) from Event class
@@ -64,7 +64,8 @@ class Represent3D:
         :param plt_title:  Title for the plot.
         :param lbl: Label for the saetas.
         :param grids: Set cell grids (higher CPU requirements, not recommendable)
-        :param frmt_color: Format color for the representation of saetas.
+        :param frmt_color: Format color for the representation of saetas (if frmt_color="chi2", 
+            the color of each saeta depends on its chi square value).
         :param frmt_marker: Format marker for the representation of saetas.
         :param ax: Projection 3D object from matplotlib.pyplot
         """
@@ -87,23 +88,27 @@ class Represent3D:
             x = np.array([x0, x0 + x1])
             y = np.array([y0, y0 + y1])
             z = np.array([z0, z1])
-            try:
-                chi2 = saeta.chi2
-                if chi2 > 15:
-                    pass
-                elif 15 >= chi2 >= 10:
-                    frmt_color = "#FFF000"
-                elif 10 > chi2 >= 6:
-                    frmt_color = "#FFA000"
-                elif 6 > chi2 >= 3:
-                    frmt_color = "#FF5000"
-                elif 3 > chi2 >= 0:
-                    frmt_color = "#FF0000"
-                else:
-                    raise Exception(f"Ojo al dato: Prob = {chi2}")
-            except AttributeError:
-                pass
-            ax.plot(x, y, z, linestyle=frmt_marker, color=frmt_color, label=f"{lbl} {k}")
+            if frmt_color == "chi2":
+                try:
+                    chi2 = saeta.chi2
+                    if chi2 > 15:
+                        f_color = "#FFFF00"
+                    elif 15 >= chi2 >= 10:
+                        f_color = "#FFCC00"
+                    elif 10 > chi2 >= 6:
+                        f_color = "#FF8800"
+                    elif 6 > chi2 >= 3:
+                        f_color = "#FF4400"
+                    elif 3 > chi2 >= 0:
+                        f_color = "#FF0000"
+                    else:
+                        raise Exception(f"Ojo al dato: Prob = {chi2}")
+                    ax.plot(x, y, z, linestyle=frmt_marker, color=f_color, label=f"{lbl} {k}")
+                except AttributeError:
+                    ax.plot(x, y, z, linestyle=frmt_marker, label=f"{lbl} {k}")
+            else:
+                ax.plot(x, y, z, linestyle=frmt_marker, color=frmt_color, label=f"{lbl} {k}")
+
         ax.legend(loc='best')
 
         # Plot cell grid

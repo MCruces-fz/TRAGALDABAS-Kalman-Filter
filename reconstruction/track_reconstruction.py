@@ -19,23 +19,6 @@ class TrackFinding:
 
         self.loop()
 
-        print("Generated saetas:")
-        # self.sim_evt.print_saetas()
-        for s in range(len(self.sim_evt.saetas)):
-            saeta = self.sim_evt.saetas[s]
-            saeta.show()
-
-        print("")
-        print("Reconstructed saetas:")
-        # self.rec_evt.print_saetas()
-        for s in range(len(self.rec_evt.saetas)):
-            saeta = self.rec_evt.saetas[s]
-            saeta.show()
-            print(f"Chi2: {saeta.chi2}")
-            for hit in saeta.hits:
-                print(hit.values)
-            print("")
-
     def kalman_filter(self, ind_hits):
         """
         Applies Kalman Filter method (for a combination of given hits, but not yet)
@@ -83,13 +66,11 @@ class TrackFinding:
             saeta.add_hit(hit)
             cutf = self.cut(saeta)
             dcut = 0.01
-            print(f"cutf: {cutf}")
             if cutf > dcut:
                 self.sim_evt.hits[ih].use()
                 if len(ind_hits) - 2 == ip:  # At last loop add saeta
                     self.rec_evt.add_saeta(saeta)
             else:
-                print(f"Broken with chi2: {saeta.chi2}")
                 break
 
     @staticmethod
@@ -125,7 +106,6 @@ class TrackFinding:
         z1 = VZ1[hit1.trb_num]
         z2 = VZ1[hit2.trb_num]
         d_r = np.sqrt((hit1.x_pos - hit2.x_pos)**2 + (hit1.y_pos - hit2.y_pos)**2 + (z1 - z2)**2)
-        print(f"v: {d_r / d_time}")
         return d_r / d_time
 
     def loop(self):

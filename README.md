@@ -1,15 +1,17 @@
 # TRAGALDABAS-Kalman-Filter
 
 ## INTRODUCTION
-Code that simulates particle showers (`GenerateEvent` calss) and reconstructs 
-their tracks from their fingerprints (`TrackFinding` class) on TRASGO detectors. 
+Code that simulates particle showers (`SimEvent` calss) and reconstructs 
+their tracks from their fingerprints (`TrackFinding` class) in TRASGO detectors. 
 This particle showers can be loaded (`RootUnpacker` class) from ROOT
 trees with real data too.
 
 The **TRASGO** detectors are:
   - *TRAGALDABAS:* It is composed by three (actually) plates/plans with 
-    120 cells each one
-  - *TRISTAN:* It is composted by four detector planes with...
+    120 cells each one. At the future we hope install the fourth detector
+    plane, like is simulated in this code.
+  - *TRISTAN:* It is composted by four detector planes with a different number
+    of cells per plane.
 
 ## REVIEW
 
@@ -19,7 +21,6 @@ The **TRASGO** detectors are:
 *****************************
 >April 2020. ***JA Garzon***. labCAF / USC
 >
->April 2020. *Sara Costa*.  
 >July 2020. *Miguel Cruces*
 *****************************
 
@@ -43,13 +44,20 @@ to configure make files executables and so on. Then
 ```
 and follow the instructions.
 
+### Run
+
+Execute the main file with `python3`
+```bash
+python3 main_script.py
+```
+
 ## DOCUMENTATION
 
-### GenerateEvent class
-It generates ntrack tracks from a charged particle and propagates them in 
-the Z axis direction through NPLAN planes.
+### SimEvent class
+It generates a random number of tracks from a charged particle with a given angle and propagates them in 
+the Z axis direction through NPLAN planes. Also digitizes the particle possition in each plane.
 
-**Location:** *modules/event_simulation.py*
+**Location:** *simulation/simulation.py*
 
 #### GenerateEvent.digitization() method
 It simulates the digital answer in NPLAN planes of detectors, in which:
@@ -60,15 +68,15 @@ It simulates the digital answer in NPLAN planes of detectors, in which:
 It reconstructs the tracks using Kalman Filter. It Finds tracks for hits 
 on any TRASGO-like detector
 
-**Location:** *modules/tracks_reconstruction.py*
+**Location:** *reconstruction/track_reconstruction.py*
 
 ### RootUnpacker class
 
-**Location:** *modules/root_unpacker.py*
+**Location:** *real_data/root_unpacker.py*
 
 ### Represent3D class
 
-**Location:** *modules/utils.py*
+**Location:** *represent/represent_3d.py*
 
 ### Configuration File (*Outdated*)
 The config.json file is the settings table for users.

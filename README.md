@@ -4,7 +4,6 @@
 Code that simulates particle showers (`SimEasyEvent` calss) and reconstructs 
 their tracks from their fingerprints (`TrackFinding` class) on TRASGO detectors. 
 
-
 The **TRASGO** detectors are:
   - *TRAGALDABAS:* It is composed by three (actually) plates/plans with 
     120 cells each one
@@ -41,6 +40,10 @@ to configure make files executables and so on. Then
 ./trebol
 ```
 and follow the instructions.
+
+### Run
+
+Execute `run_simulation.py` with python
 
 ## DOCUMENTATION
 

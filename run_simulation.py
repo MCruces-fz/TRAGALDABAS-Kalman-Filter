@@ -1,9 +1,9 @@
-from simulation.clunky_sim import SimClunkyEvent
+from simulation.easy_sim import SimEasyEvent
 from reconstruction.track_reconstruction import TrackFinding
 # from reconstruction.saeta import Saeta
 from represent.represent_3d import Represent3D as r3d
 
-sim = SimClunkyEvent(tracks_number=None)  # Generate event here, with inputs
+sim = SimEasyEvent(tracks_number=None)  # Generate event here, with inputs
 
 find = TrackFinding(sim)
 

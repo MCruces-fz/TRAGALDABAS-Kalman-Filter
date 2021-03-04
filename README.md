@@ -1,10 +1,9 @@
 # TRAGALDABAS-Kalman-Filter
 
 ## INTRODUCTION
-Code that simulates particle showers (`GenerateEvent` calss) and reconstructs 
+Code that simulates particle showers (`SimEasyEvent` calss) and reconstructs 
 their tracks from their fingerprints (`TrackFinding` class) on TRASGO detectors. 
-This particle showers can be loaded (`RootUnpacker` class) from ROOT
-trees with real data too.
+
 
 The **TRASGO** detectors are:
   - *TRAGALDABAS:* It is composed by three (actually) plates/plans with 
@@ -45,11 +44,11 @@ and follow the instructions.
 
 ## DOCUMENTATION
 
-### GenerateEvent class
+### SimEasyEvent class
 It generates ntrack tracks from a charged particle and propagates them in 
 the Z axis direction through NPLAN planes.
 
-**Location:** *modules/event_simulation.py*
+**Location:** *simulation/easy_sim.py*
 
 #### GenerateEvent.digitization() method
 It simulates the digital answer in NPLAN planes of detectors, in which:
@@ -60,54 +59,12 @@ It simulates the digital answer in NPLAN planes of detectors, in which:
 It reconstructs the tracks using Kalman Filter. It Finds tracks for hits 
 on any TRASGO-like detector
 
-**Location:** *modules/tracks_reconstruction.py*
-
-### RootUnpacker class
-
-**Location:** *modules/root_unpacker.py*
+**Location:** *reconstruction/tracks_reconstruction.py*
 
 ### Represent3D class
+It shows Simulated and reconstructed events in the 3D space
 
-**Location:** *modules/utils.py*
-
-### Configuration File (*Outdated*)
-The config.json file is the settings table for users.
-- *config.json*: **settings** table for user.
-    + "rd_seed": Choose an integer seed for numpy random generator, or keep 
-    it random with 'None'/'null'
-    + "kf_cut": Kalman Filter cut value (kf_cut = 0.6 is the most efficient)
-    + "tt_cut": Tim Track cut value
-    + "tracks_number": Number of generated tracks
-    + "single_run":
-        * "do": Do single run? (bool)
-        * "plot_representations": Set if shows the 3D representation of rays 
-        on the detector (bool)
-        * "final_prints": Set if print final data (bool)
-        * "save_diff": Set if save differences between parameters of the 
-        generated and reconstructed SAETAs (See below "SAVE DIFFERENCES" 
-        docstring) (bool)
-    + "efficiency":
-        * "do": (bool)
-        * "prints": (bool)
-        * "plots": (bool)
-        * "save_txt": (bool)
-
-
-```
--------------------   S A V E - D I F F E R E N C E S   ------------------- 
-_______________________________ (save_diff) _______________________________
-
-Set if save differences between parameters of the generated and  
-reconstructed SAETAs,  
-  - Sgen = [X0g, XPg, Y0g, YPg, T0g, S0g]  
-  - Srec = [X0r, XPr, Y0r, YPr, T0r, S0r]
-on 'saetas_file.csv'  
-(X0r - X0g), (XPr - XPg), (Y0r - Y0g), (YPr - YPg), (T0r - T0g), (S0r - S0g)  
-[       ...,         ...,         ...,         ...,         ...,       ... ]  
-on append mode.  
----------------------------------   END   ---------------------------------- 
-```
-
+**Location:** *represent/represent_3d.py*
 
 ### Comments
 Some coding criteria:

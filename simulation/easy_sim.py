@@ -7,7 +7,7 @@ from cosmic.hit import Hit
 from utils.const import NTRACK, NPLAN, VZ1, WCX, WCY, DT
 
 
-class SimClunkyEvent(Simulate):
+class SimEasyEvent(Simulate):
     def __init__(self, tracks_number: Union[int, None] = NTRACK):
         super().__init__(tracks_number)
 

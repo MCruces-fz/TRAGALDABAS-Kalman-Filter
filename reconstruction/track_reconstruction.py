@@ -1,5 +1,5 @@
 from simulation.efficiency import SimEvent
-from simulation.clunky_sim import SimClunkyEvent
+from simulation.easy_sim import SimEasyEvent
 from cosmic.event import Event
 from cosmic.hit import Hit
 from reconstruction.kf_saeta import KFSaeta
@@ -13,7 +13,7 @@ from scipy import stats
 
 
 class TrackFinding:
-    def __init__(self, event: Union[Event, SimEvent, SimClunkyEvent]):
+    def __init__(self, event: Union[Event, SimEvent, SimEasyEvent]):
         self.sim_evt = event
         self.rec_evt = Event()
 

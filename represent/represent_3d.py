@@ -1,5 +1,5 @@
 # from simulation.simulation import Simulate
-from simulation.clunky_sim import SimClunkyEvent
+from simulation.easy_sim import SimEasyEvent
 from simulation.efficiency import SimEvent
 from cosmic.event import Event
 from utils.const import LENX, LENY, VZ0, NPLAN, WCX, WCY, WPADX, WPADY
@@ -17,7 +17,7 @@ import mpl_toolkits.mplot3d.art3d as art3d
 
 
 class Represent3D:
-    def __init__(self, sim_event: Union[SimClunkyEvent, SimEvent] = None,
+    def __init__(self, sim_event: Union[SimEasyEvent, SimEvent] = None,
                  rec_event: Event = None):
         """
         Representation of the detector with saetas and hits
@@ -53,7 +53,7 @@ class Represent3D:
         return ax
 
     @classmethod
-    def saetas(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
+    def saetas(cls, event: Union[SimEasyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
                plt_title=None, lbl: str = 'Saeta', grids: bool = False, frmt_color: str = None,
                frmt_marker: str = "--", ax: object = None):
         """
@@ -121,7 +121,7 @@ class Represent3D:
         ax.legend(loc='best')
 
     @classmethod
-    def hits(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: str = None,
+    def hits(cls, event: Union[SimEasyEvent, SimEvent, Event], fig_id: str = None,
              plt_title: Union[str, None] = None, face_color: str = '#AF7AC5', edge_color: str = '#9B59B6', ax=None):
         """
         Config Function for plot any set of hits (Hit) from Event class
@@ -150,7 +150,7 @@ class Represent3D:
         ax.legend(loc='best')
 
     @classmethod
-    def lines(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: str = None,
+    def lines(cls, event: Union[SimEasyEvent, SimEvent, Event], fig_id: str = None,
               plt_title: Union[str, None] = None, c_dot: bool = True, lbl: str = 'Line',
               frmt_color: str = "green", frmt_marker: str = ":", ax=None):
         """

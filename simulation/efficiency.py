@@ -8,16 +8,16 @@ E F F I C I E N C Y   C L A S S
 from simulation.simulation import Simulate
 from cosmic.hit import Hit
 # from cosmic.saeta import Saeta
-from utils.const import NPLAN, VZ1, NPADX, NPADY, DT, PITCHX, PITCHY, WPADX, WPADY, EDGEX, EDGEY, SEP
+from utils.const import NPLAN, VZ1, NPADX, NPADY, DT, PITCHX, PITCHY, WPADX, WPADY, EDGEX, EDGEY, SEP, NTRACK
 
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
 
 class SimEvent(Simulate):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, tracks_number: Union[int, None] = NTRACK):
+        super().__init__(tracks_number)
 
     @staticmethod
     def fired_cell(r: float, var: str) -> List:
@@ -87,7 +87,7 @@ class SimEvent(Simulate):
                 # print(col, accept_x)
                 # print(row, accept_y)
 
-                time = np.int((ti + DT / 2) / DT) * DT
+                time = int((ti + DT / 2) / DT) * DT
 
                 hit = Hit(ip, col, row, time)
                 hit.detected = accept_x and accept_y

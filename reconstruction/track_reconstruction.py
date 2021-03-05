@@ -3,13 +3,14 @@ from simulation.clunky_sim import SimClunkyEvent
 from cosmic.event import Event
 from cosmic.hit import Hit
 from reconstruction.kf_saeta import KFSaeta
-from utils.const import SC, VZ1, NDAC, NPAR, VC
+from utils.const import SC, VZ1, NDAC, NPAR, VC, NPLAN, DT, PITCHX, PITCHY
 from utils.utilities import identity_2d
 
-from typing import Union
+from typing import Union, List
 import numpy as np
 from numpy.linalg import inv
 from scipy import stats
+import warnings
 
 
 class TrackFinding:
@@ -17,7 +18,8 @@ class TrackFinding:
         self.sim_evt = event
         self.rec_evt = Event()
 
-        self.loop()
+        # self.loop()
+        self.execute()
 
         print("Generated saetas:")
         # self.sim_evt.print_saetas()
@@ -41,7 +43,6 @@ class TrackFinding:
         Applies Kalman Filter method (for a combination of given hits, but not yet)
 
         """
-        # TODO: Hacerlo como antes, sim implementar novedades todavía!!
 
         hit = self.sim_evt.hits[ind_hits[0]]
         # Step 1. - INITIALIZATION (Hypothesis)
@@ -56,6 +57,8 @@ class TrackFinding:
         # H -> model measurement: Identity of size 3x6
         H = identity_2d(NDAC, NPAR)
 
+        iterator = list(zip(range(NPLAN), ind_hits))  # [[3, 1739], [2, 902], [1, 522], [0, 0]]
+        iter = iterator[2::-1]
         for ip, ih in enumerate(ind_hits[1:]):
             # Plane index, hit index
 
@@ -69,15 +72,15 @@ class TrackFinding:
             # Step 4. - FILTRATION
             hit = self.sim_evt.hits[ih]
 
-            # K -> Gain matrix: equation
+            # k_gain -> Gain matrix: equation
             # m -> measurement: hit.measurement
             # V -> measurement covariance matrix: hit.cov
-            K = saeta.cov  @ H.T @ inv(hit.cov + H @ saeta.cov @ H.T)
+            k_gain = saeta.cov @ H.T @ inv(hit.cov + H @ saeta.cov @ H.T)
 
             # New Saeta
             # TODO: Change attribute names: vector -> list & saeta -> vector
-            saeta.saeta = saeta.saeta + K @ (hit.measurement - H @ saeta.saeta)
-            saeta.cov = (identity_2d(NPAR, NPAR) - K @ H) @ saeta.cov
+            saeta.saeta = saeta.saeta + k_gain @ (hit.measurement - H @ saeta.saeta)
+            saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
 
             # Claculate chi2 and add to KFSaeta class as attribute
             saeta.add_hit(hit)
@@ -115,44 +118,61 @@ class TrackFinding:
             elif not dof:
                 cut_f = 1
             else:
-                print(f'WARNING! ndf = {dof}')  # FIXME: Add real warning
+                warnings.warn(f"WARNING! Degrees of Freedom = {dof}", category=UserWarning)
                 cut_f = np.nan
         return cut_f
 
     @staticmethod
-    def speed_calc(hit1: Hit, hit2: Hit) -> float:
-        d_time = abs(hit1.time - hit2.time)
-        z1 = VZ1[hit1.trb_num]
-        z2 = VZ1[hit2.trb_num]
-        d_r = np.sqrt((hit1.x_pos - hit2.x_pos)**2 + (hit1.y_pos - hit2.y_pos)**2 + (z1 - z2)**2)
-        print(f"v: {d_r / d_time}")
-        return d_r / d_time
+    def physical_speed(hit_i: Hit, hit_j: Hit) -> bool:
+        """
+        Check if it is physically probable that a particle can get from the
+        first hit (hit_i) to the second one (hit_j)
 
-    def loop(self):
+        :param hit_i: First Hit object.
+        :param hit_j: Second Hit object.
+        """
+
+        dx = int(abs(hit_i.col - hit_j.col) - 0.5) * PITCHX
+        dy = int(abs(hit_i.row - hit_j.row) - 0.5) * PITCHY
+        dz = VZ1[hit_i.trb_num] - VZ1[hit_j.trb_num]
+        min_distance = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+
+        light_time = min_distance / VC
+        particle_time = abs(hit_i.time - hit_j.time) + DT
+
+        return light_time < particle_time
+
+    def nested_loops(self, hit_i: Hit, missing_planes: Union[list, range], foo, ip=NPLAN - 2,
+                     hit_ids: List[int] = None):
+        """
+        Applies foo function for every combination of hit indices hit_ids. These combinations have
+            len(hit_ids) == NPLAN
+
+        :param hit_i: Previous Hit object
+        :param missing_planes: Nested lists with indices missing planes to iterate over them.
+        :param foo: Final function to execute with all indices
+        :param ip: Plane index at current loop.
+        :param hit_ids: k indices of Hit objects in the Event.hits attribute.
+        """
+        if hit_ids is None:
+            hit_ids = []
+
+        for k in range(self.sim_evt.total_mult):
+            hit_j = self.sim_evt.hits[k]
+            if hit_j.trb_num != ip: continue
+            if not self.physical_speed(hit_i, hit_j): continue
+
+            if ip == 0:
+                foo(hit_ids + [k])
+            else:
+                self.nested_loops(hit_j, missing_planes[1:], foo, ip=ip - 1, hit_ids=hit_ids + [k])
+
+    def execute(self):
         """
         Gives to kalman_filter method all combinations of hits, one by one.
         Sorted from lower to upper plane.
         """
-
-        n_hits = self.sim_evt.total_mult
-
-        for i in range(n_hits):
-            hit4 = self.sim_evt.hits[i]
-            if hit4.trb_num != 3: continue
-
-            for j in range(n_hits):
-                hit3 = self.sim_evt.hits[j]
-                if hit3.trb_num != 2: continue
-                if self.speed_calc(hit4, hit3) > VC + 0.15: continue
-
-                for k in range(n_hits):
-                    hit2 = self.sim_evt.hits[k]
-                    if hit2.trb_num != 1: continue
-                    if self.speed_calc(hit3, hit2) > VC + 0.15: continue
-
-                    for m in range(n_hits):
-                        hit1 = self.sim_evt.hits[m]
-                        if hit1.trb_num != 0: continue
-                        if self.speed_calc(hit2, hit1) > VC + 0.15: continue
-
-                        self.kalman_filter([i, j, k, m])
+        for k in range(self.sim_evt.total_mult):
+            hit = self.sim_evt.hits[k]
+            if hit.trb_num != NPLAN - 1: continue
+            self.nested_loops(hit, range(NPLAN - 1)[::-1], self.kalman_filter, hit_ids=[k])

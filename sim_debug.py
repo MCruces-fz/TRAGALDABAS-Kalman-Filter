@@ -13,6 +13,23 @@ print("")
 
 find = TrackFinding(sim)
 
+print("Generated saetas:")
+# self.sim_evt.print_saetas()
+for s in range(len(find.sim_evt.saetas)):
+    saeta = find.sim_evt.saetas[s]
+    saeta.show()
+
+print("")
+print("Reconstructed saetas:")
+# find.rec_evt.print_saetas()
+for s in range(len(find.rec_evt.saetas)):
+    saeta = find.rec_evt.saetas[s]
+    saeta.show()
+    print(f"Chi2: {saeta.chi2}")
+    for hit in saeta.hits:
+        print(hit.values)
+    print("")
+
 # represent = r3d(find.sim_evt, find.rec_evt)
 r3d.saetas(find.sim_evt, lbl="Sim.", frmt_marker='--')
 r3d.hits(find.sim_evt)

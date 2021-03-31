@@ -15,33 +15,27 @@ import warnings
 
 class TrackFinding:
     def __init__(self, event: Union[Event, SimEvent, SimClunkyEvent]):
+        """
+        T R A C K   F I N D I N G 
+          --- Kalman filter ---  
+
+        Using the Event information, this class uses Kalman filter method 
+        to reconstruct saetas from hits.
+
+        :param event: Instance of a class which inherits from Event class,
+        with information of the simulated or measured (real) event.
+        """
         self.sim_evt = event
         self.rec_evt = Event()
 
-        # self.loop()
         self.execute()
 
-        print("Generated saetas:")
-        # self.sim_evt.print_saetas()
-        for s in range(len(self.sim_evt.saetas)):
-            saeta = self.sim_evt.saetas[s]
-            saeta.show()
-
-        print("")
-        print("Reconstructed saetas:")
-        # self.rec_evt.print_saetas()
-        for s in range(len(self.rec_evt.saetas)):
-            saeta = self.rec_evt.saetas[s]
-            saeta.show()
-            print(f"Chi2: {saeta.chi2}")
-            for hit in saeta.hits:
-                print(hit.values)
-            print("")
-
-    def kalman_filter(self, ind_hits):
+    def kalman_filter(self, ind_hits: List[int]):
         """
         Applies Kalman Filter method (for a combination of given hits, but not yet)
 
+        :param ind_hits: Hits indices in a list. Each index is the position of the
+        hit instance inside the Event object (which has those Hits in a list.)
         """
 
         hit = self.sim_evt.hits[ind_hits[0]]
@@ -100,7 +94,8 @@ class TrackFinding:
         """
         Function that returns quality factor by the first method
 
-        :param saeta: Saeta object
+        :param saeta: Saeta object.
+        :return: Quality factor based on chi squared.
         """
         beta_min = 0.2
         smx = 1 / (beta_min * VC)
@@ -130,6 +125,7 @@ class TrackFinding:
 
         :param hit_i: First Hit object.
         :param hit_j: Second Hit object.
+        :return: True if speed is physical, False if not.
         """
 
         dx = int(abs(hit_i.col - hit_j.col) - 0.5) * PITCHX

@@ -12,20 +12,18 @@ from utils.const import NPLAN, VZ1, NPADX, NPADY, DT, PITCHX, PITCHY, WPADX, WPA
 
 from typing import List, Union
 
-import numpy as np
-
 
 class SimEvent(Simulate):
     def __init__(self, tracks_number: Union[int, None] = NTRACK):
         super().__init__(tracks_number)
 
     @staticmethod
-    def fired_cell(r: float, var: str) -> List:
+    def fired_cell(r: float, var: str) -> List[Union[int, bool]]:
         """
         Digitize the hit of the saeta following the accurate shape of the detector
         at current height z0.
 
-        :param r: Distance of the hit possition in "var" direction/axis from the origin
+        :param r: Distance of the hit position in "var" direction/axis from the origin
             of coordinates.
         :param var: Axis or direction of the r coordinate ("x" or "y").
         :return: column and row of the cell in the detector and digitized time of the hit.
@@ -41,7 +39,7 @@ class SimEvent(Simulate):
             w_pad = WPADY
             n_pad = NPADY
         else:
-            raise Exception("Blah blah")
+            raise Exception('The axis coordinate must be "x" or "y" (strings)')
 
         re = r - edge  # mm
         rp = re / pitch  # pitch

@@ -168,3 +168,8 @@ class Hit:
         Move to KFHit
         """
         return diag_matrix([SIGX**2, SIGY**2, SIGT**2])
+
+
+class VoidHit(Hit):
+    def __init__(self):
+        super().__init__(*[np.nan]*4)

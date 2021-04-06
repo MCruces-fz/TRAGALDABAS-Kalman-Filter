@@ -25,6 +25,9 @@ class SimEvent(Simulate):
         Digitize the hit of the saeta following the accurate shape of the detector
         at current height z0.
 
+        :param r: Distance of the hit possition in "var" direction/axis from the origin
+            of coordinates.
+        :param var: Axis or direction of the r coordinate ("x" or "y").
         :return: column and row of the cell in the detector and digitized time of the hit.
         """
         if var in ["x", "X"]:
@@ -78,21 +81,16 @@ class SimEvent(Simulate):
                 saeta.displace(dz)
                 xi, _, yi, _, ti, _ = saeta.vector
 
-                # print(xi, yi)
+                time = int((ti + DT / 2) / DT) * DT
 
-                # Position indices of the impacted cells (cell index)
                 col, accept_x = self.fired_cell(xi, var="x")
                 row, accept_y = self.fired_cell(yi, var="y")
-
-                # print(col, accept_x)
-                # print(row, accept_y)
-
-                time = int((ti + DT / 2) / DT) * DT
 
                 hit = Hit(ip, col, row, time)
                 hit.detected = accept_x and accept_y
 
-                self.add_hit(hit, randomize=True)
+                if hit.detected:
+                    self.add_hit(hit, randomize=True)
                 self.saetas[sid].add_hit(hit)
             saeta.z0 = 0
 

@@ -38,11 +38,15 @@ class TrackFinding:
         hit instance inside the Event object (which has those Hits in a list.)
         """
 
+        print(ind_hits)
+
         hit = self.sim_evt.hits[ind_hits[0]]
         # Step 1. - INITIALIZATION (Hypothesis)
         x0 = hit.x_pos
         y0 = hit.y_pos
         t0 = hit.time
+        # TODO: Upgrade KFSaeta to initialize automatically (initiate from
+        #  previous reconstructed KFSaeta)
         saeta = KFSaeta(x0, 0, y0, 0, t0, SC, z0=VZ1[-1])  # Initial covariance set automatically
         saeta.reset_cov(big=False)
         saeta.add_hit(hit)
@@ -172,3 +176,32 @@ class TrackFinding:
             hit = self.sim_evt.hits[k]
             if hit.trb_num != NPLAN - 1: continue
             self.nested_loops(hit, range(NPLAN - 1)[::-1], self.kalman_filter, hit_ids=[k])
+
+    def sort_hits_trb(self, event: Union[Event, SimEvent, SimClunkyEvent]):
+        """
+        Sort Hits from Event by trb number.
+        """
+
+        print("Before:")
+        for hit in event.hits:
+            print(hit.values)
+
+        for iter_num in range(len(event.hits) - 1, 0, -1):
+            for idx in range(iter_num):
+                if event.hits[idx].trb_num > event.hits[idx + 1].trb_num:
+                    tmp = event.hits[idx]
+                    event.hits[idx] = event.hits[idx + 1]
+                    event.hits[idx + 1] = tmp
+
+        print("After:")
+        for hit in event.hits:
+            print(hit.values)
+
+        # TODO: Continue here, with REAL RECONSTRUCTION
+        #  - Se puede poner un VoidHit (o mejor un Hit inicializado
+        #  con np.nan's) cuando no haya hit en un plano
+        #  - Sería mejor reescribir Kalman Filter para que pudiese
+        #  saltarse un plano sin hits, y que fuese él mismo el que
+        #  buscase en cada plano los hits que hay y cuáles son los mejores
+        #  para utilizar. Si no hay ninguno, continúa a través de planos
+        #  con la información que consiga.

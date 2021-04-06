@@ -149,4 +149,5 @@ class Simulate(Event):
             (X0, XP, Y0, YP, T0, S0)
         to discrete values.
         """
-        pass
+
+        raise Exception("This method must be overriden!")

@@ -51,7 +51,10 @@ class Event:
     @property
     def total_mult(self) -> int:
         """
-        Total Multiplicity: This is The total number of hits in all the detector.
+        Total Multiplicity: This is The total number of hits in all the
+            detector for the current event.
+
+        :return: Number of hits.
         """
         return len(self._hits)
 
@@ -83,15 +86,6 @@ class Event:
         return self._hits
 
     @property
-    def hits_num(self) -> int:
-        """
-        Number of total hits in event
-
-        :return: Number of hits.
-        """
-        return len(self.hits)
-
-    @property
     def hit_coords(self) -> np.array:
         """
         Hit coordinates
@@ -99,7 +93,7 @@ class Event:
         :return: Numpy array with all hits coordinates
         """
         hits = np.zeros((0, 4))
-        for hit in range(self.hits_num):
+        for hit in range(self.total_mult):
             hits = np.vstack((hits, self.hits[hit].values))
         return hits
 

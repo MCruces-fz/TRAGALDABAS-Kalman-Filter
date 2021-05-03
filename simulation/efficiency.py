@@ -91,4 +91,3 @@ class SimEvent(Simulate):
                     self.add_hit(hit, randomize=True)
                 self.saetas[sid].add_hit(hit)
             saeta.z0 = 0
-

@@ -80,7 +80,7 @@ class TrackFinding:
             saeta.saeta = saeta.saeta + k_gain @ (hit.measurement - H @ saeta.saeta)
             saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
 
-            # Claculate chi2 and add to KFSaeta class as attribute
+            # Calculate chi2 and add to KFSaeta class as attribute
             saeta.add_hit(hit)
             cutf = self.cut(saeta)
             dcut = 0.01
@@ -177,7 +177,8 @@ class TrackFinding:
             if hit.trb_num != NPLAN - 1: continue
             self.nested_loops(hit, range(NPLAN - 1)[::-1], self.kalman_filter, hit_ids=[k])
 
-    def sort_hits_trb(self, event: Union[Event, SimEvent, SimClunkyEvent]):
+    @staticmethod
+    def sort_hits_trb(event: Union[Event, SimEvent, SimClunkyEvent]):
         """
         Sort Hits from Event by trb number.
         """

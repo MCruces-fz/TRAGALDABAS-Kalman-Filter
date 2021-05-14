@@ -59,6 +59,7 @@ class Hit:
         """
         # TODO: Use probability in function of chi2
         self._used += 1
+        return self
 
     @property
     def values(self):
@@ -168,6 +169,25 @@ class Hit:
         Move to KFHit
         """
         return diag_matrix([SIGX**2, SIGY**2, SIGT**2])
+
+    @property
+    def hash(self):
+        """
+        Unique identifier for each hit
+        """
+        return f"{self._col:02d}{self._row:02d}{self._trb_num:1d}{self._time:2d}"
+
+    def __str__(self):
+        return (
+            ".-----   H I T   I N S T A N C E   -----.\n"
+            ":                                       :\n"
+            f": (  x,   y) = ({self.x_pos:8.3f}, {self.y_pos:8.3f}) mm  :\n"
+            f": (col, row) = ({self.col:4d}    , {self.row:4d}    )     :\n"
+            f": TRB number:            {self.trb_num:5d}     (T{self.trb_num + 1}) :\n"
+            f": Time:                  {self.time:5d}      ps  :\n"
+            f": Used:                  {self.used:5d}   times  :\n"
+            "'---------------------------------------'\n"
+        )
 
 
 class VoidHit(Hit):

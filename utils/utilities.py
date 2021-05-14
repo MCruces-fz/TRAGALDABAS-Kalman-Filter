@@ -160,3 +160,21 @@ def print_tables(values_2d: np.array, columns: Union[list, None] = None, rows: U
         row_format = "{:>5}" + "{:>12.3f}" * len(values_2d[0])
         for title, line in zip(rows, values_2d):
             print(row_format.format(title, *line))
+
+
+def flatten(data: list) -> list:
+    """
+    Turn a nested list into a flat list
+
+    :param data: List of lists (of lists...) / nested list.
+    :return: Flatten list.
+    """
+
+    results = []
+    for rec in data:
+        if isinstance(rec, list):
+            results.extend(rec)
+            results = flatten(results)
+        else:
+            results.append(rec)
+    return results

@@ -4,7 +4,7 @@ from cosmic.event import Event
 from cosmic.hit import Hit
 from reconstruction.kf_saeta import KFSaeta
 from utils.const import SC, VZ1, NDAC, NPAR, VC, NPLAN, DT, PITCHX, PITCHY
-from utils.utilities import identity_2d
+from utils.utilities import identity_2d, flatten
 
 from typing import Union, List
 import numpy as np
@@ -28,29 +28,119 @@ class TrackFinding:
         self.sim_evt = event
         self.rec_evt = Event()
 
-        self.execute()
+        # self.execute()
+
+    @staticmethod
+    def unused_hits(list_of_hits: list) -> bool:
+        """
+        Check if there are unused hits
+
+        :param list_of_hits: List (or nested list) of hits to check.
+        :return: True if there are unused hits, False if all hits were used.
+        """
+
+        return not np.all(hit.used for hit in flatten(list_of_hits))
+
+    @staticmethod
+    def init_saeta(hit: Hit) -> KFSaeta:
+        """
+        Step 1. - INITIALIZATION (Hypothesis)
+
+        :param hit:
+        :return: KFSaeta
+        """
+        x0 = hit.x_pos
+        y0 = hit.y_pos
+        t0 = hit.time
+
+        saeta = KFSaeta(x0, 0, y0, 0, t0, SC, z0=VZ1[-1])  # Initial covariance set automatically
+        saeta.reset_cov(big=False)
+        hit.use()
+        saeta.add_hit(hit)
+
+        return saeta
+
+    def k_filter(self):
+        """
+        Applies Kalman Filter method for all hits in Event instance.
+        """
+
+        init_hits, *next_hits = self.hits_plane()
+
+        # H -> model measurement: Identity of size 3x6
+        H = identity_2d(NDAC, NPAR)
+
+        # iters = 0
+        # while self.unused_hits([init_hits, next_hits]) and iters < 20:
+        #     pass
+        #     iters += 1
+
+        for hit_0 in init_hits:
+            # Step 1. - INITIALIZATION (Hypothesis)
+            saeta = self.init_saeta(hit_0)
+
+            hit_used = None
+            for hit_list in next_hits:  # Jump plane
+                hit_i = hit_0 if hit_used is None else hit_used
+
+                for hit_j in hit_list:  # Change hit in plane
+                    if hit_j.used: continue
+                    if not self.physical_speed(hit_i, hit_j): continue
+
+                    print(f"from T{hit_i.trb_num + 1} to T{hit_j.trb_num + 1} "
+                          f"(dz = {VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]} mm)")
+
+                    # Step 2. - PREDICTION
+                    dz = VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]  # Must be negative
+                    saeta.transport(dz)
+
+                    # Step 3. - PROCESS NOISE [UNUSED YET]
+                    # ...
+
+                    # Step 4. - FILTRATION
+
+                    # k_gain -> Gain matrix: equation
+                    # m -> measurement: hit.measurement
+                    # V -> measurement covariance matrix: hit.cov
+                    k_gain = saeta.cov @ H.T @ inv(hit_j.cov + H @ saeta.cov @ H.T)
+
+                    # New Saeta
+                    # TODO: Change attribute names: vector -> list & saeta -> vector
+                    saeta.saeta = saeta.saeta + k_gain @ (hit_j.measurement - H @ saeta.saeta)
+                    saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
+
+                    # Calculate chi2 and add to KFSaeta class as attribute
+                    hit_used = hit_j.use()
+                    saeta.add_hit(hit_j)
+
+                    saeta.set_chi2()
+                    self.rec_evt.add_saeta(saeta)
+
+        self.rec_evt.clean_saetas()
+
+        # for i_hit in flatten([init_hits, next_hits]):
+        #     print(i_hit)
+        # print("--------------------------------")
+        # for j_hit in self.sim_evt.hits:
+        #     print(j_hit)
+        # print("--------------------------------")
+        # for j_saeta in self.rec_evt.saetas:
+        #     for j_hit in j_saeta.hits:
+        #         print(j_hit)
 
     def kalman_filter(self, ind_hits: List[int]):
         """
-        Applies Kalman Filter method (for a combination of given hits, but not yet)
+        Applies Kalman Filter method for a combination of given hits.
 
         :param ind_hits: Hits indices in a list. Each index is the position of the
-        hit instance inside the Event object (which has those Hits in a list.)
+            hit instance inside the Event object (which has those Hits in a list.)
         """
 
         print(ind_hits)
 
         hit = self.sim_evt.hits[ind_hits[0]]
         # Step 1. - INITIALIZATION (Hypothesis)
-        x0 = hit.x_pos
-        y0 = hit.y_pos
-        t0 = hit.time
-        # TODO: Upgrade KFSaeta to initialize automatically (initiate from
-        #  previous reconstructed KFSaeta)
-        saeta = KFSaeta(x0, 0, y0, 0, t0, SC, z0=VZ1[-1])  # Initial covariance set automatically
-        saeta.reset_cov(big=False)
-        saeta.add_hit(hit)
-        # TODO: Add Number of hits used to KFSaeta
+        saeta = self.init_saeta(hit)
 
         # H -> model measurement: Identity of size 3x6
         H = identity_2d(NDAC, NPAR)
@@ -183,20 +273,12 @@ class TrackFinding:
         Sort Hits from Event by trb number.
         """
 
-        print("Before:")
-        for hit in event.hits:
-            print(hit.values)
-
         for iter_num in range(len(event.hits) - 1, 0, -1):
             for idx in range(iter_num):
                 if event.hits[idx].trb_num > event.hits[idx + 1].trb_num:
                     tmp = event.hits[idx]
                     event.hits[idx] = event.hits[idx + 1]
                     event.hits[idx + 1] = tmp
-
-        print("After:")
-        for hit in event.hits:
-            print(hit.values)
 
         # TODO: Continue here, with REAL RECONSTRUCTION
         #  - Se puede poner un VoidHit (o mejor un Hit inicializado
@@ -206,3 +288,15 @@ class TrackFinding:
         #  buscase en cada plano los hits que hay y cuáles son los mejores
         #  para utilizar. Si no hay ninguno, continúa a través de planos
         #  con la información que consiga.
+
+    def hits_plane(self):
+        self.sort_hits_trb(self.sim_evt)
+        d = {}
+        for k, hit in enumerate(self.sim_evt.hits[::-1]):
+            if hit.trb_num not in d:
+                d[hit.trb_num] = []
+            d[hit.trb_num].append(hit)
+
+        # for key in d:
+        #     yield d[key]
+        return list(d.values())

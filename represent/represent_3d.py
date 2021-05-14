@@ -121,7 +121,7 @@ class Represent3D:
         ax.legend(loc='best')
 
     @classmethod
-    def hits(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: str = None,
+    def hits(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
              plt_title: Union[str, None] = None, face_color: str = '#AF7AC5', edge_color: str = '#9B59B6', ax=None):
         """
         Config Function for plot any set of hits (Hit) from Event class
@@ -150,7 +150,7 @@ class Represent3D:
         ax.legend(loc='best')
 
     @classmethod
-    def lines(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: str = None,
+    def lines(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
               plt_title: Union[str, None] = None, c_dot: bool = True, lbl: str = 'Line',
               frmt_color: str = "green", frmt_marker: str = ":", ax=None):
         """

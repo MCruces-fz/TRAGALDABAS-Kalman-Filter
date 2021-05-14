@@ -21,14 +21,71 @@ class Event:
         self._saetas: Union[List[Saeta], List[KFSaeta]] = []
         self._hits: List[Hit] = []
 
-    def add_saeta(self, saeta: Union[Saeta, KFSaeta]):
+    def add_saeta(self, saeta: Union[Saeta, KFSaeta], force: bool = False):
         """
         Add a new saeta to the event
 
         :param saeta: Saeta object to add to the event
+        :param force: (optional) If True, add saeta with no checking, else
+            check if saeta exists.
         """
 
-        self._saetas.append(saeta)
+        if not force:
+            if not self._saetas:
+                self._saetas.append(saeta)
+                return 0
+
+            for k, inner in enumerate(self._saetas):
+                equal = []
+                min_hits = min(len(inner.hits), len(saeta.hits))
+                for i in range(min_hits):
+                    equal.append(inner.hits[i].hash == saeta.hits[i].hash)
+
+                if np.all(equal) and len(inner.hits) <= len(saeta.hits):
+                    # Substitution
+                    self._saetas[k] = saeta
+                else:
+                    # Addition
+                    self._saetas.append(saeta)
+        else:
+            self._saetas.append(saeta)
+
+    def clean_saetas(self):
+        """
+        Remove repeated saetas, keeping the best chi2.
+            list.remove(element)
+            list.pop(index)
+        """
+
+        try:
+            for saeta in self._saetas:
+                getattr(saeta, "chi2")
+        except Exception as e:
+            print(e)
+            print(e.__doc__)
+            e_name = e.__class__.__name__
+            if e_name == "AttributeError":
+                print("Saetas must be instances of KFSaeta")
+            elif e_name == "ImportError":
+                print("You need to edit main directories manually "
+                      "in command/settings.json")
+            else:
+                print("Bad option")
+
+        temp = []
+        i = 0
+        while i < len(self._saetas):
+            j = 0
+            while j < len(temp):
+                if temp[j].hash == self._saetas[i].hash:
+                    if temp[j].chi2 > self._saetas[i].chi2:
+                        temp[j] = self._saetas[i]
+                    break
+                j += 1
+                if j == len(temp):
+                    temp.append(self._saetas[i])
+            i += 1
+        self._saetas = temp
 
     def add_hit(self, hit: Hit, randomize: bool = False):
         """
@@ -102,7 +159,7 @@ class Event:
         Method to show friendly saeta vectors (ASCII).
         """
         for saeta in self._saetas:
-            saeta.show()
+            print(saeta)
 
     def print_hits(self, size="small"):
         """

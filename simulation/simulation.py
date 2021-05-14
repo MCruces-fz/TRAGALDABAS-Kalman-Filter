@@ -138,7 +138,7 @@ class Simulate(Event):
 
             # Check if the particle has entered the detector
             if np.abs(x_mid) < (LENX / 2) and np.abs(y_mid) < (LENY / 2):
-                self.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0))
+                self.add_saeta(Saeta(X0, XP, Y0, YP, T0, S0), force=True)
                 count_tracks += 1
 
     def digitization(self):

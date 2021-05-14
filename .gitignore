@@ -16,6 +16,7 @@ all_bins_*
 .idea/
 unity_input_*
 s*.vim
+*_debug.py
 
 # Distribution / packaging
 .Python

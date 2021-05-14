@@ -43,6 +43,8 @@ class Saeta:
         else:
             self._z0 = z0
 
+        self._hash = None
+
     @property
     def ks(self) -> float:
         return self._ks
@@ -61,6 +63,10 @@ class Saeta:
         """
         Add the new hit used
         """
+        for inner in self._hits:
+            if hit.trb_num == inner.trb_num:
+                raise Exception(f"This Saeta already has one hit in"
+                                f"TRBNUM {inner.trb_num} saved.")
         self._hits.append(hit)
 
     @property
@@ -112,17 +118,6 @@ class Saeta:
 
         self._ks = np.sqrt(1 + xp ** 2 + yp ** 2)
 
-    def show(self):
-        """
-        Friendly representation of the vertical saeta vector.
-        """
-        print(f"|{self._x0: 7.1f} |\n"
-              f"|{self._xp: 7.3f} |\n"
-              f"|{self._y0: 7.1f} |\n"
-              f"|{self._yp: 7.3f} |\n"
-              f"|{self._t0: 7.0f} |\n"
-              f"|{self._s0: 7.3f} |\n")
-
     @property
     def z0(self) -> float:
         """
@@ -168,6 +163,32 @@ class Saeta:
         self.vector = (x0, self._xp, y0, self._yp, t0, self._s0)
 
         self._z0 += dz
+
+    @property
+    def hash(self):
+        """
+        Unique identifier for each hit
+        """
+
+        if not self._hits:
+            raise Exception("Saeta has no hits")
+        self._hash = ""
+        for hit in self._hits:
+            self._hash += hit.hash
+        return self._hash
+
+    def __str__(self):
+        """
+        Friendly representation of the vertical saeta vector.
+        """
+        return (
+            f"|{self._x0: 7.1f} |\n"
+            f"|{self._xp: 7.3f} |\n"
+            f"|{self._y0: 7.1f} |\n"
+            f"|{self._yp: 7.3f} |\n"
+            f"|{self._t0: 7.0f} |\n"
+            f"|{self._s0: 7.3f} |\n"
+        )
 
 
 

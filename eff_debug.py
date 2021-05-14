@@ -22,7 +22,7 @@ print("Reconstructed saetas:")
 # find.rec_evt.print_saetas()
 for s in range(len(find.rec_evt.saetas)):
     saeta = find.rec_evt.saetas[s]
-    saeta.show()
+    print(saeta)
     print(f"Chi2: {saeta.chi2}")
     for hit in saeta.hits:
         print(hit.values)

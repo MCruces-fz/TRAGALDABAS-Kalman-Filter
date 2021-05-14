@@ -1,7 +1,7 @@
 from cosmic.saeta import Saeta
 from cosmic.hit import Hit
 from utils.utilities import diag_matrix
-from utils.const import WX, WY, WT, VSLP, VSLN, NPAR, VZ1, SIGX, SIGY, SIGT
+from utils.const import WX, WY, WT, VSLP, VSLN, NPAR, VZ1  # , SIGX, SIGY, SIGT
 
 from typing import Union, List
 import numpy as np
@@ -92,18 +92,15 @@ class KFSaeta(Saeta):
             xt, yt = hit.x_pos, hit.y_pos
             self.z0 = VZ1[ip]
             x0, _, y0, _, t0, _ = self.vector
-            chi2 += (x0 - xt)**2 / SIGX**2 + (y0 - yt)**2 / SIGY**2 + (t0 - tt)**2 / SIGT**2
-        self.chi2 = chi2
+            # chi2 += (x0 - xt)**2 / SIGX**2 + (y0 - yt)**2 / SIGY**2 + (t0 - tt)**2 / SIGT**2
+            chi2 += (x0 - xt) ** 2 * WX + (y0 - yt) ** 2 * WY + (t0 - tt) ** 2 * WT
+        self._chi2 = chi2
         self.z0 = zc
 
     @property
     def chi2(self):
         self.set_chi2()
         return self._chi2
-
-    @chi2.setter
-    def chi2(self, chi2):
-        self._chi2 = chi2
 
     def show_cov(self):
         """

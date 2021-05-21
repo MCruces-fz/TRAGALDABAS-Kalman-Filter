@@ -1,7 +1,7 @@
 from cosmic.saeta import Saeta
 from cosmic.hit import Hit
 from utils.utilities import diag_matrix
-from utils.const import WX, WY, WT, VSLP, VSLN, NPAR, VZ1  # , SIGX, SIGY, SIGT
+from utils.const import WX, WY, WT, VSLP, VSLN, NPAR, VZ1, NPLAN  # , SIGX, SIGY, SIGT
 
 from typing import Union, List
 import numpy as np
@@ -116,4 +116,19 @@ class KFSaeta(Saeta):
         #         l_cell.append(s_cell)
         #     l_row.append('\t'.join(l_cell))
         # print('\n'.join(l_row))
+
+    @property
+    def top_hit(self):
+        """
+        Get the top hit of this saeta.
+
+        return: Top hit from self._hits
+        """
+
+        top_hit = Hit(trb_num=NPLAN, col=0, row=0, time=0)
+        for hit in self._hits:
+            if hit.trb_num <= top_hit.trb_num:
+                top_hit = hit
+        return top_hit
+
 

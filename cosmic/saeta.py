@@ -65,7 +65,7 @@ class Saeta:
         """
         for inner in self._hits:
             if hit.trb_num == inner.trb_num:
-                raise Exception(f"This Saeta already has one hit in"
+                raise Exception(f"This Saeta already has one hit in "
                                 f"TRBNUM {inner.trb_num} saved.")
         self._hits.append(hit)
 

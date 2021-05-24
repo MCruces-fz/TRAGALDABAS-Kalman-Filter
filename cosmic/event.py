@@ -13,6 +13,7 @@ from utils.const import NPADX, NPADY, NPLAN
 
 from typing import List, Union
 import numpy as np
+import warnings
 
 
 class Event:
@@ -21,20 +22,40 @@ class Event:
         self._saetas: Union[List[Saeta], List[KFSaeta]] = []
         self._hits: List[Hit] = []
 
-    def add_saeta(self, saeta: Union[Saeta, KFSaeta], force: bool = False):
+    def add_saeta(self, saeta: Union[Saeta, KFSaeta], force: bool = False, _to: Union[None, Saeta, KFSaeta] = None):
         """
         Add a new saeta to the event
 
         :param saeta: Saeta object to add to the event
         :param force: (optional) If True, add saeta with no checking, else
             check if saeta exists.
+        :param _to: Saeta to substitute.
         """
 
-        if not force:
+        if _to is not None and not force:
+            equal = []
+            min_hits = min(len(_to.hits), len(saeta.hits))
+            for i in range(min_hits):
+                equal.append(_to.hits[i].hash == saeta.hits[i].hash)
+
+            if np.all(equal) and len(_to.hits) <= len(saeta.hits):
+                # Substitution
+                print(f"substituted ({equal}, len(inner)={len(_to.hits)}, len(outer)={len(saeta.hits)})\n", saeta,
+                      saeta.hash)
+                # self._saetas[k] = saeta  #
+                self.remove_saeta(_to)
+                self._saetas.append(saeta)
+            else:
+                # Addition
+                print(f"finally, added ({equal}, len(inner)={len(_to.hits)}, len(outer)={len(saeta.hits)})\n", saeta,
+                      saeta.hash)
+                self._saetas.append(saeta)
+
+        elif _to is None and not force:
             if not self._saetas:
+                print("added directly\n", saeta, saeta.hash)
                 self._saetas.append(saeta)
                 return 0
-
             for k, inner in enumerate(self._saetas):
                 equal = []
                 min_hits = min(len(inner.hits), len(saeta.hits))
@@ -43,12 +64,36 @@ class Event:
 
                 if np.all(equal) and len(inner.hits) <= len(saeta.hits):
                     # Substitution
-                    self._saetas[k] = saeta
+                    print(f"substituted ({equal}, len(inner)={len(inner.hits)}, len(outer)={len(saeta.hits)})\n", saeta, saeta.hash)
+                    # self._saetas[k] = saeta  #
+                    self.remove_saeta(self._saetas[k])
+                    self._saetas.append(saeta)
+                    return 0
                 else:
                     # Addition
+                    print(f"finally, added ({equal}, len(inner)={len(inner.hits)}, len(outer)={len(saeta.hits)})\n", saeta, saeta.hash)
                     self._saetas.append(saeta)
-        else:
+                    return 0
+        elif _to is None and force:
             self._saetas.append(saeta)
+        else:
+            raise Exception(f"Ojo! _to: {type(_to)}, force: {force}")
+
+    def remove_saeta(self, saeta: Union[Saeta, KFSaeta]):
+        """
+        Remove given saeta from event
+        """
+        print("Try to remove", saeta.hash, "... ")
+        new_list = []
+        for inner in self._saetas:
+            if saeta.hash != inner.hash:
+                new_list.append(inner)
+            else:
+                print("removed")
+                print(saeta)
+        if len(new_list) < len(self._saetas): print("REMOVED!")
+        else: print("Not removed")
+        self._saetas = new_list
 
     def clean_saetas(self):
         """
@@ -57,21 +102,26 @@ class Event:
             list.pop(index)
         """
 
+        if not self.saetas_num:
+            warnings.warn("There isn't saetas to clean", stacklevel=2)
+            return 1
+
         try:
             for saeta in self._saetas:
                 getattr(saeta, "chi2")
         except Exception as e:
-            print(e)
             print(e.__doc__)
+            print(e)
             e_name = e.__class__.__name__
             if e_name == "AttributeError":
-                print("Saetas must be instances of KFSaeta")
-            elif e_name == "ImportError":
-                print("You need to edit main directories manually "
-                      "in command/settings.json")
+                warnings.warn("Saetas must be instances of KFSaeta "
+                              "(Apply only in reconstructed events, "
+                              "not simulated)", stacklevel=2)
+                return 1
             else:
-                print("Bad option")
+                raise Exception("Bad option: ADD BETTER EXCEPTION")
 
+        # Delete duplicates algorithm:
         temp = []
         i = 0
         while i < len(self._saetas):
@@ -116,13 +166,22 @@ class Event:
         return len(self._hits)
 
     @property
-    def saetas(self) -> Union[List[Saeta], List[KFSaeta]]:
+    def saetas(self) -> Union[List[KFSaeta], List[Saeta]]:
         """
         Saeta objects
 
         :return: List with all saeta objects
         """
         return self._saetas
+
+    @saetas.setter
+    def saetas(self, saetas_list: Union[List[Saeta], List[KFSaeta]]):
+        """
+        Saeta objects
+
+        :return: List with all saeta objects
+        """
+        self._saetas = saetas_list
 
     @property
     def saetas_num(self) -> int:
@@ -132,6 +191,21 @@ class Event:
         :return: Number of saetas.
         """
         return len(self._saetas)
+
+    def saetas_below(self, trb_num: int) -> List[Union[Saeta, KFSaeta]]:
+        """
+        Return a list with the saetas ending below any TRB
+
+        :param trb_num: Number of TRB as threshold. All returned saetas will have
+            all their hits below that trb_number.
+        :return: List with all saetas below.
+        """
+
+        s_below = []
+        for saeta in self._saetas:
+            if saeta.top_hit.trb_num > trb_num:
+                s_below.append(saeta)
+        return s_below
 
     @property
     def hits(self) -> List[Hit]:
@@ -154,14 +228,25 @@ class Event:
             hits = np.vstack((hits, self.hits[hit].values))
         return hits
 
-    def print_saetas(self):  # TODO: Do this better, in one line
+    def str_saetas(self):
         """
         Method to show friendly saeta vectors (ASCII).
         """
-        for saeta in self._saetas:
-            print(saeta)
+        if not self._saetas: return 0
+        height = len(self._saetas[0].__str__().split("\n"))
 
-    def print_hits(self, size="small"):
+        line = ""
+        for row in range(height):
+            for col in range(self.saetas_num):
+                if col != 0 and row == height - 2:
+                    line += ", "
+                else:
+                    line += "  "
+                line += self._saetas[col].__str__().split("\n")[row]
+            if row != height - 1: line += "\n"
+        return line
+
+    def str_hits(self, size="small"):
         """
         Method to show friendly representation of hits in planes (ASCII).
         """
@@ -214,4 +299,4 @@ if __name__ == "__main__":
     event = Event()
     event.add_saeta(Saeta(123, 0.34, 432, 0.5, 1000, 3.333))
     event.add_saeta(Saeta(145, -0.44, 876, 0.2, 1050, 3.333))
-    event.print_saetas()
+    event.str_saetas()

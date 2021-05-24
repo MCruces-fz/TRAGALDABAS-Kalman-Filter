@@ -11,6 +11,7 @@ import numpy as np
 from numpy.linalg import inv
 from scipy import stats
 import warnings
+import copy
 
 
 class TrackFinding:
@@ -27,6 +28,8 @@ class TrackFinding:
         """
         self.sim_evt = event
         self.rec_evt = Event()
+
+        self.cut_thresh = 1e-2
 
         # self.execute()
 
@@ -60,6 +63,69 @@ class TrackFinding:
 
         return saeta
 
+    def kalman_filter(self, saeta_i, hit_i, hit_j):
+
+        # Step 2. - PREDICTION
+        dz = VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]  # Must be negative
+        saeta = copy.deepcopy(saeta_i)
+        saeta.transport(dz)
+
+        # Step 3. - PROCESS NOISE [UNUSED YET]
+        # ...
+
+        # Step 4. - FILTRATION
+
+        # H -> model measurement: Identity of size 3x6
+        H = identity_2d(NDAC, NPAR)
+        # k_gain -> Gain matrix: equation
+        # m -> measurement: hit.measurement
+        # V -> measurement covariance matrix: hit.cov
+        k_gain = saeta.cov @ H.T @ inv(hit_j.cov + H @ saeta.cov @ H.T)
+
+        # New Saeta
+        # TODO: Change attribute names: vector -> list & saeta -> vector
+        saeta.saeta = saeta.saeta + k_gain @ (hit_j.measurement - H @ saeta.saeta)
+        saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
+
+        # Calculate chi2 and add to KFSaeta class as attribute
+        hit_j.use()
+        saeta.add_hit(hit_j)
+
+        saeta.set_chi2()
+        return saeta
+
+    def main_loop(self):
+        """
+        Applies Kalman Filter method for all hits in Event instance.
+        """
+        self.sim_evt.str_hits()  # This is only a print
+
+        for trb_hits in self.hits_plane():
+            current_trb_num = trb_hits[0].trb_num
+            print(f"Plane T{current_trb_num + 1}")
+            for hit_j in trb_hits:  # 0
+                saetas_below = self.rec_evt.saetas_below(hit_j.trb_num)  # 1
+                print("Saetas below ----------")
+                for i in saetas_below:
+                    print(i, i.hash)
+                print("-----------------------")
+                if not saetas_below:
+                    saeta_0 = self.init_saeta(hit_j)
+                    hit_j.use()
+                    self.rec_evt.add_saeta(saeta_0)
+                else:
+                    for saeta in saetas_below:
+                        hit_i = saeta.top_hit
+                        if not self.physical_speed(hit_i, hit_j): continue
+                        saeta_t = self.kalman_filter(saeta, hit_i, hit_j)
+                        if self.cut(saeta_t) < self.cut_thresh: continue
+                        hit_i.use()
+                        self.rec_evt.add_saeta(saeta_t, _to=saeta)  # , force=True)  #
+                print(f"Event at Plane T{trb_hits[0].trb_num + 1}")
+                print(self.rec_evt.str_saetas())
+            # for saeta_b in self.rec_evt.saetas_below(current_trb_num + 1): self.rec_evt.remove_saeta(saeta_b)
+        # self.clean_saetas()
+
     def k_filter(self):
         """
         Applies Kalman Filter method for all hits in Event instance.
@@ -77,7 +143,7 @@ class TrackFinding:
 
         for hit_0 in init_hits:
             # Step 1. - INITIALIZATION (Hypothesis)
-            saeta = self.init_saeta(hit_0)
+            saeta_0 = self.init_saeta(hit_0)
 
             hit_used = None
             for hit_list in next_hits:  # Jump plane
@@ -90,31 +156,34 @@ class TrackFinding:
                     print(f"from T{hit_i.trb_num + 1} to T{hit_j.trb_num + 1} "
                           f"(dz = {VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]} mm)")
 
-                    # Step 2. - PREDICTION
-                    dz = VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]  # Must be negative
-                    saeta.transport(dz)
+                    saeta_t = self.kalman_filter(saeta_0, hit_i, hit_j)
+                    # # Step 2. - PREDICTION
+                    # dz = VZ1[hit_j.trb_num] - VZ1[hit_i.trb_num]  # Must be negative
+                    # saeta = copy.deepcopy(saeta_0)
+                    # saeta.transport(dz)
 
-                    # Step 3. - PROCESS NOISE [UNUSED YET]
-                    # ...
+                    # # Step 3. - PROCESS NOISE [UNUSED YET]
+                    # # ...
 
-                    # Step 4. - FILTRATION
+                    # # Step 4. - FILTRATION
 
-                    # k_gain -> Gain matrix: equation
-                    # m -> measurement: hit.measurement
-                    # V -> measurement covariance matrix: hit.cov
-                    k_gain = saeta.cov @ H.T @ inv(hit_j.cov + H @ saeta.cov @ H.T)
+                    # # k_gain -> Gain matrix: equation
+                    # # m -> measurement: hit.measurement
+                    # # V -> measurement covariance matrix: hit.cov
+                    # k_gain = saeta.cov @ H.T @ inv(hit_j.cov + H @ saeta.cov @ H.T)
 
-                    # New Saeta
-                    # TODO: Change attribute names: vector -> list & saeta -> vector
-                    saeta.saeta = saeta.saeta + k_gain @ (hit_j.measurement - H @ saeta.saeta)
-                    saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
+                    # # New Saeta
+                    # # TODO: Change attribute names: vector -> list & saeta -> vector
+                    # saeta.saeta = saeta.saeta + k_gain @ (hit_j.measurement - H @ saeta.saeta)
+                    # saeta.cov = (identity_2d(NPAR, NPAR) - k_gain @ H) @ saeta.cov
 
-                    # Calculate chi2 and add to KFSaeta class as attribute
-                    hit_used = hit_j.use()
-                    saeta.add_hit(hit_j)
+                    # # Calculate chi2 and add to KFSaeta class as attribute
+                    # hit_used = hit_j.use()
+                    # saeta.add_hit(hit_j)
 
-                    saeta.set_chi2()
-                    self.rec_evt.add_saeta(saeta)
+                    # saeta.set_chi2()
+
+                    self.rec_evt.add_saeta(saeta_t)
 
         self.rec_evt.clean_saetas()
 
@@ -128,7 +197,7 @@ class TrackFinding:
         #     for j_hit in j_saeta.hits:
         #         print(j_hit)
 
-    def kalman_filter(self, ind_hits: List[int]):
+    def loop_filter(self, ind_hits: List[int]):
         """
         Applies Kalman Filter method for a combination of given hits.
 
@@ -230,6 +299,8 @@ class TrackFinding:
         light_time = min_distance / VC
         particle_time = abs(hit_i.time - hit_j.time) + DT
 
+        if not light_time < particle_time: print(f"NOT PHYSICAL: {hit_i.hash}, {hit_j.hash}")
+
         return light_time < particle_time
 
     def nested_loops(self, hit_i: Hit, missing_planes: Union[list, range], foo, ip=NPLAN - 2,
@@ -265,7 +336,7 @@ class TrackFinding:
         for k in range(self.sim_evt.total_mult):
             hit = self.sim_evt.hits[k]
             if hit.trb_num != NPLAN - 1: continue
-            self.nested_loops(hit, range(NPLAN - 1)[::-1], self.kalman_filter, hit_ids=[k])
+            self.nested_loops(hit, range(NPLAN - 1)[::-1], self.loop_filter, hit_ids=[k])
 
     @staticmethod
     def sort_hits_trb(event: Union[Event, SimEvent, SimClunkyEvent]):
@@ -290,13 +361,65 @@ class TrackFinding:
         #  con la información que consiga.
 
     def hits_plane(self):
+        """
+        Get nested list with hits per plane:
+            [[bottom_plane_hits], [...], ..., [top_plane_hits]]
+
+        :return: Nested list with sorted hits per plane.
+        """
+
         self.sort_hits_trb(self.sim_evt)
         d = {}
         for k, hit in enumerate(self.sim_evt.hits[::-1]):
             if hit.trb_num not in d:
                 d[hit.trb_num] = []
             d[hit.trb_num].append(hit)
-
-        # for key in d:
-        #     yield d[key]
         return list(d.values())
+
+    def clean_saetas(self):
+        """
+        Remove repeated saetas, keeping the best chi2.
+            list.remove(element)
+            list.pop(index)
+        """
+
+        if not self.rec_evt.saetas_num:
+            warnings.warn("There isn't saetas to clean", stacklevel=2)
+            return 1
+
+        try:
+            for saeta in self.rec_evt.saetas:
+                getattr(saeta, "chi2")
+        except Exception as e:
+            print(e.__doc__)
+            print(e)
+            e_name = e.__class__.__name__
+            if e_name == "AttributeError":
+                warnings.warn("Saetas must be instances of KFSaeta "
+                              "(Apply only in reconstructed events, "
+                              "not simulated)", stacklevel=2)
+                return 1
+            else:
+                raise Exception("Bad option: ADD BETTER EXCEPTION")
+
+        # Remove saetas with only one hit (at the end)
+        for saeta in self.rec_evt.saetas:
+            if len(saeta.hits) <= 1:
+                self.rec_evt.remove_saeta(saeta)
+
+        # Delete duplicated saetas (with same hash)
+        temp = [self.rec_evt.saetas[0]]
+        i = 0
+        while i < len(self.rec_evt.saetas):
+            j = 0
+            while j < len(temp):
+                if temp[j].hash == self.rec_evt.saetas[i].hash:
+                    if self.cut(temp[j]) < self.cut(self.rec_evt.saetas[i]):
+                        temp[j] = self.rec_evt.saetas[i]
+                    break
+                j += 1
+                if j == len(temp):
+                    temp.append(self.rec_evt.saetas[i])
+            i += 1
+
+        self.rec_evt.saetas = temp

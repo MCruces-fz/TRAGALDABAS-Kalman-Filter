@@ -131,4 +131,18 @@ class KFSaeta(Saeta):
                 top_hit = hit
         return top_hit
 
+    @property
+    def bottom_hit(self):
+        """
+        Get the top bottom of this saeta.
+
+        return: Bottom hit from self._hits
+        """
+
+        bottom_hit = Hit(trb_num=0, col=0, row=0, time=0)
+        for hit in self._hits:
+            if hit.trb_num >= bottom_hit.trb_num:
+                bottom_hit = hit
+        return bottom_hit
+
 

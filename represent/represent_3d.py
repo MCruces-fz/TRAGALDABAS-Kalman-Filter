@@ -8,6 +8,7 @@ from scipy import stats
 import numpy as np
 from typing import Union
 from matplotlib.patches import Rectangle
+from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.pyplot as plt
 # import matplotlib
@@ -43,7 +44,9 @@ class Represent3D:
         if fig_id is None:
             fig_id = 0
         fig = plt.figure(fig_id)
-        ax = fig.add_subplot(projection='3d')  # fig.gca(projection='3d') Deprecated in Matplotlib 3.4
+        # ax = Axes3D(fig)
+        ax = fig.gca(projection='3d')  # Deprecated in Matplotlib 3.4
+        # ax = fig.add_subplot(projection='3d')
         if plt_title is not None:
             ax.set_title(plt_title)
         ax.set_xlabel('X axis / mm')
@@ -77,6 +80,7 @@ class Represent3D:
 
         for k, saeta in enumerate(event.saetas):
             # Unpack values
+            saeta.z0 = VZ0[-1]
             x0, xp, y0, yp, t0, s0 = saeta.vector
 
             # Definition of variables

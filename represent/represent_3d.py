@@ -6,10 +6,12 @@ from utils.const import LENX, LENY, VZ0, NPLAN, WCX, WCY, WPADX, WPADY
 
 from scipy import stats
 import numpy as np
-import matplotlib.pyplot as plt
 from typing import Union
 from matplotlib.patches import Rectangle
 import mpl_toolkits.mplot3d.art3d as art3d
+import matplotlib.pyplot as plt
+# import matplotlib
+# matplotlib.use('TkAgg')
 
 # ========================================================================== #
 # ====================== P L O T   F U N C T I O N S ======================= #
@@ -41,7 +43,7 @@ class Represent3D:
         if fig_id is None:
             fig_id = 0
         fig = plt.figure(fig_id)
-        ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(projection='3d')  # fig.gca(projection='3d') Deprecated in Matplotlib 3.4
         if plt_title is not None:
             ax.set_title(plt_title)
         ax.set_xlabel('X axis / mm')
@@ -122,7 +124,8 @@ class Represent3D:
 
     @classmethod
     def hits(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
-             plt_title: Union[str, None] = None, face_color: str = '#AF7AC5', edge_color: str = '#9B59B6', ax=None):
+             plt_title: Union[str, None] = None, face_color: Union[str, None] = '#AF7AC5',
+             edge_color: Union[str, None] = '#9B59B6', ax=None):
         """
         Config Function for plot any set of hits (Hit) from Event class
 
@@ -152,7 +155,7 @@ class Represent3D:
     @classmethod
     def lines(cls, event: Union[SimClunkyEvent, SimEvent, Event], fig_id: Union[str, int, None] = None,
               plt_title: Union[str, None] = None, c_dot: bool = True, lbl: str = 'Line',
-              frmt_color: str = "green", frmt_marker: str = ":", ax=None):
+              frmt_color: Union[str, None] = "green", frmt_marker: str = ":", ax=None):
         """
         Lines matching any set of hits
 

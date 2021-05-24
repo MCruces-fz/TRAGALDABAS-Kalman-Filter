@@ -8,12 +8,12 @@ sim = SimEvent(tracks_number=None)
 print("Generated saetas:")
 # for saeta in sim.saetas:
 #     print(saeta.saeta)
-sim.print_saetas()
+sim.str_saetas()
 
 print(f"Generated hits ({sim.total_mult}):")
 for hit in sim.hits:
     print(hit.values)
-sim.print_hits(size="small")
+sim.str_hits(size="small")
 
 find = TrackFinding(sim)
 

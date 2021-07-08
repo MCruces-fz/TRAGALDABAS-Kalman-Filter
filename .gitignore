@@ -11,6 +11,7 @@ all_bins_*
 *.jpeg
 *.jpg
 *.png
+!md/reco_[1-9].png
 *.pdf
 *.dat
 .idea/

@@ -1,5 +1,19 @@
 # TRAGALDABAS-Kalman-Filter
 
+One track                     |  Three tracks
+:----------------------------:|:-------------------------------:
+![One track](./md/reco_1.png) | ![Three tracks](./md/reco_3.png)
+
+```
+Legend:
+
+- - - Sim.: Simulated Saeta.
+----- Rec.: Reconstructed Saeta
+..... Rec.: Reconstructed path, from one cell center to another.
+
+(Indices start in 0)
+```
+
 ## INTRODUCTION
 Code that simulates particle showers (`SimEvent` calss) and reconstructs 
 their tracks from their fingerprints (`TrackFinding` class) in TRASGO detectors. 
